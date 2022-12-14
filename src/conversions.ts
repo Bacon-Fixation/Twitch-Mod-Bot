@@ -166,13 +166,13 @@ export const addFullStop = (str: string) => {
   return str.replace(/ /g, ".");
 };
 
-export const addUnderscore = (str: string) => {
-  return str.replace(/ /g, "_");
-};
+// export const addUnderscore = (str: string) => {
+//   return str.replace(/ /g, "_");
+// };
 
-export const addDash = (str: string) => {
-  return str.replace(/ /g, "-");
-};
+// export const addDash = (str: string) => {
+//   return str.replace(/ /g, "-");
+// };
 
 export const removeSpace = (str: string) => {
   return str.replace(/\s+/g, "");
@@ -191,39 +191,39 @@ exports.sanitize = (str: string) => {
   return str.replace(/[^a-zA-Z0-9]/g, "");
 };
 
-exports.sanitize.keepUnicode = (str: string) => {
+export const keepUnicode = (str: string) => {
   return str.replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, "");
 };
 
-exports.sanitize.keepSpace = (str: string) => {
+export const keepSpace = (str: string) => {
   let str2 = str.replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, "");
   return str2.replace(/ /g, " ");
 };
 
-exports.sanitize.addFullstop = (str: string) => {
+export const addFullstop = (str: string) => {
   let str2 = str.replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, "");
   return str2.replace(/ /g, ".");
 };
 
-exports.sanitize.addUnderscore = (str: string) => {
+export const addUnderscore = (str: string) => {
   let str2 = str.replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, "");
   return str2.replace(/ /g, "_");
 };
 
-exports.sanitize.addDash = (str: string) => {
+export const addDash = (str: string) => {
   let str2 = str.replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, "");
   return str2.replace(/ /g, "-");
 };
 
-exports.sanitize.removeNumber = (str: string) => {
+export const removeNumber = (str: string) => {
   return str.replace(/[^a-zA-Z]/g, "");
 };
 
-exports.sanitize.removeText = (str: string) => {
+export const removeText = (str: string) => {
   return str.replace(/[^0-9]/g, "");
 };
 
-exports.sanitize.keepNumber = (str: string) => {
+export const keepNumber = (str: string) => {
   return str.replace(/[^a-zA-Z0-9]/g, "");
 };
 // Sanitizing End

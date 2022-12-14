@@ -4,6 +4,7 @@ import {
   fitText,
   removeAccents,
   hasNumber,
+  keepSpace,
 } from "./conversions";
 const { unleetify } = require("./unleet.js");
 import path from "path";
@@ -34,7 +35,11 @@ import {
 import Logger from "./logger";
 import { bot_settings } from "./server";
 import { invisibleChars } from "./regex";
-import { UsernoticeMessage } from "@kararty/dank-twitch-irc";
+import {
+  PrivmsgMessage,
+  SayError,
+  UsernoticeMessage,
+} from "@kararty/dank-twitch-irc";
 
 var chatCheckTimer: NodeJS.Timer;
 export var unModded: string[] = [];
@@ -408,25 +413,7 @@ export const startBot = async (client: TwitchBot) => {
       );
       return;
     }
-    // client.sendRaw("/user " + msgData.channel.login);
-    // console.log(client.twitch.auth);
 
-    // console.log(
-    //   msToTime(
-    //     await twitchClient.twitch.api.followAge({
-    //       channel: msg.channelName,
-    //       user: msg.senderUsername,
-    //     })
-    //   )
-    // );
-    // console.log(msg);
-    // console.log(
-    //   await twitchClient.twitch.api.getFollows({
-    //     channel_id: msg.channelID,
-    //     // user_id: msg.senderUserID,
-    //     twitch_access_token: twitchClient.twitch.auth.access_token,
-    //   })
-    // );
     if (msg.senderUsername == bot_settings.bot_login) return;
     if (msg.bits) {
       if (
@@ -438,61 +425,126 @@ export const startBot = async (client: TwitchBot) => {
         await saveStreamData("cheerers", client.twitch.stream_data.cheerers);
       }
     }
-    // console.log(msg);
 
-    // await msgData.send("testing");
-    // if (!twitchClient.userStateTracker?.channelStates[msg.channelName]?.isMod) {
-    //   return msgData.send("requires mod privilege ");
-    // }
-    // const invisiChar =
-    //   /[\u034f\u2800\u{E0000}\u180e\ufeff\u2000-\u200d\u206D]/gu;
-    // const accents = /[\u0300-\u036f]/;
-    // Logger.info(
-    //   await client.twitch.api.isFollowed({
-    //     channel: msg.channelName,
-    //     user: msg.senderUsername,
-    //   })
-    // );
     // test username is bad
     const followAge = await client.twitch.api.followAge({
       channel: msg.channelName,
       user: msg.senderUsername,
     });
     const difference = Date.now() - followAge;
+    const okUsers: string[] = [];
+    client.twitch.permitted_users.map((Value) => {
+      okUsers.push(Value.login);
+    });
 
-    // console.log(msToTime(followAge), difference);
-    if (regex.test(msg.senderUsername)) {
-      Logger.info(msg.senderUsername + " triggered username check");
-      // ignore user if they have a badge
-      if (
-        msgData.user.perms.broadcaster ||
-        msgData.user.perms.mod ||
-        msgData.user.perms.vip
-      )
-        return;
-      // ignore user if they are followed to the channel
-      const followAge = await client.twitch.api.followAge({
-        channel: msg.channelName,
-        user: msg.senderUsername,
+    const susChatters: string[] = [];
+    if (
+      msgData.user.perms.broadcaster ||
+      msgData.user.perms.mod ||
+      msgData.user.perms.vip
+    )
+      return;
+    if (okUsers.includes(msgData.user.login)) return;
+    const badWords = client.twitch.wordBank.blocked;
+    let username = removeAccents(msgData.user.login);
+
+    badWords.forEach(async (searchTerm) => {
+      if (!searchTerm) return;
+      if (/(_)/gi.test(username)) username = removeUnderscore(username);
+      if (/(-)/gi.test(username)) username = removeDash(username);
+
+      const nameIterations = (await unleetify(username)) as string[];
+      // Basic Compare - see if the username iteration matches the search term directly
+      if (nameIterations.includes(searchTerm)) {
+        Logger.info(
+          `*********\nBad Name: ${msgData.user.name}\nTrigger: ${searchTerm} \n`
+        );
+        return susChatters.push(msgData.user.name);
+      }
+      if (new RegExp(searchTerm, "gi").test(username)) {
+        Logger.info(
+          `*********\nBad Name: ${msgData.user.name} \nTrigger: ${searchTerm}`
+        );
+        return susChatters.push(msgData.user.name);
+      }
+      // Advanced Compare - see if a section of the username iterations match the search term
+      if (hasNumber(username)) {
+        for (let i = 0; i < nameIterations.length; ++i) {
+          if (new RegExp(searchTerm, "gi").test(nameIterations[i])) {
+            Logger.info(
+              `*********\nBad Name: ${msgData.user.name}\nTrigger: ${searchTerm}\nUnleet: ${nameIterations[i]}`
+            );
+            susChatters.push(msgData.user.name);
+            break;
+          }
+        }
+      }
+      if (susChatters.length == 0 || !susChatters) return;
+      const users = await client.twitch.api.getUsers({
+        logins: susChatters,
+        token: client.twitch.auth.api.access_token,
       });
-      const difference = Date.now() - followAge;
 
-      console.log(msToTime(followAge));
-      if (
-        await client.twitch.api.isFollowed({
-          channel: msg.channelName,
-          user: msg.senderUsername,
-        })
-      )
-        return;
+      users.forEach(async (user) => {
+        const accountAge = Date.now() - new Date(user.created_at).valueOf();
+        if (accountAge < 24 * 60 * 60 * 1000) {
+          if (!unModded.includes(msgData.channel.login))
+            await banUser(
+              client,
+              user.login,
+              msgData.channel.login,
+              "Mod-Bot Inappropriate Username"
+            );
+        }
+      });
+      // if (regex.test(msg.senderUsername)) {
+      //   Logger.info(msg.senderUsername + " triggered username check");
+      // ignore user if they have a badge
 
-      // twitchClient.timeout(
-      //   msg.channelName,
-      //   msg.senderUsername,
-      //   10,
-      //   "name is mean"
-      // );
-    }
+      // ignore user if they are followed to the channel
+      //   const followAge = await client.twitch.api.followAge({
+      //     channel: msg.channelName,
+      //     user: msg.senderUsername,
+      //   });
+      //   const difference = Date.now() - followAge;
+
+      //   console.log(msToTime(followAge));
+      //   if (
+      //     await client.twitch.api.isFollowed({
+      //       channel: msg.channelName,
+      //       user: msg.senderUsername,
+      //     })
+      //   )
+      //     return;
+      // }
+
+      if (msg.messageText) {
+        const filteredText = keepSpace(msg.messageText)
+          .toString()
+          .toLowerCase();
+
+        if (
+          filteredText.includes("follower") &&
+          filteredText.includes("viewer")
+        ) {
+          try {
+            await isFollowBot(msg);
+          } catch (err) {
+            Logger.error(err);
+          }
+        }
+        if (
+          filteredText.includes("Get") &&
+          filteredText.includes("prime-subs") &&
+          filteredText.includes("viewer")
+        )
+          try {
+            await isFollowBot(msg);
+          } catch (err) {
+            Logger.error(err);
+          }
+      }
+    });
   });
   const connected: string[] = [];
   const tmiConnect: string[] = [];
@@ -590,12 +642,53 @@ export const startBot = async (client: TwitchBot) => {
   });
 
   client.on("rawCommand", (cmd) => {
-    console.log(cmd);
+    Logger.info(cmd);
   });
 
   // Connect
   await client.connect();
   await client.joinAll(tmiConnect);
+  async function isFollowBot(msg: PrivmsgMessage) {
+    const timeStart = Date.now();
+    Logger.info("Follow bot message an action: " + msg.isAction);
+    Logger.info(
+      `Follow Bot Triggered:(${msg.channelName}) ${msg.senderUsername} | "${msg.messageText}"`
+    );
+    // Times-out Bots that are not subbed, mod, or broadcaster when trigger is detected
+    if (
+      (await client.twitch.api.isFollowed({
+        user: msg.senderUserID,
+        channel: msg.channelID,
+      })) == false
+    ) {
+      const reactionTime = `${Date.now() - timeStart}`;
+      Logger.info(
+        `Not Followed Bot Triggered:(${msg.channelName}) ${msg.senderUsername} | "${msg.messageText} - ${reactionTime}ms"`
+      );
+      await client
+        .me(
+          msg.channelName,
+          `‼️ Follow Bot - ${msg.senderUsername} message removed. - ${reactionTime}ms`
+        )
+        .catch(async (error) => {
+          if (error instanceof SayError) {
+            await client.say(
+              msg.channelName,
+              `‼️ Follow Bot - ${msg.senderUsername} message removed. - ${reactionTime}ms`
+            );
+          }
+        });
+      await client.deleteMsg(msg.channelName, msg.messageID);
+
+      await client.timeout(
+        msg.channelName,
+        msg.senderUsername,
+        60,
+        "Possible Follow Bot."
+      );
+    }
+    return;
+  }
 };
 
 function msToTime(query: number) {
