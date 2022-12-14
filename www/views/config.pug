@@ -1,0 +1,54 @@
+extends main
+block content 
+    title  Mod Bot - Config
+    div(class="container container-reactive dark")
+        div(class="center alert alert-dark")
+            script(type="text/javascript") function toggleVisibility() { var x = document.getElementById("client_secret"); if (x.type === "password") {  x.type = "text";  } else {    x.type = "password";  } var y = document.getElementById("client_id"); if (y.type === "password") {  y.type = "text";  } else {    y .type = "password";  } }
+
+            form(id="botConfigForm" action='/save' method='POST')
+                -
+                    const owner_login = bot_settings.owner_login ?? 'Enter Your Twitch Username';
+                    const bot_login = bot_settings.bot_login ?? 'Enter The Bots Username';
+                    const channel_to_moderate = bot_settings.channel_to_moderate ?? 'Enter the name of the channel';
+                    const client_id = bot_settings.client_id ?? 'Enter the Bots Client ID';
+                    const client_secret = bot_settings.client_secret?? 'Enter the Bots Client Secret';
+
+
+                .form-group
+                    label(for='owner_login') 
+                        strong Your Twitch Username
+                    if owner_login.startsWith("Enter")
+                        input#owner_login.form-control.col-lg-9(type='text' placeholder=owner_login name='owner_login' size=40 required)
+                    else 
+                        input#owner_login.form-control.col-lg-9(type='text' value=owner_login name='owner_login' size=40 required)
+                    label(for='bot_login') 
+                        strong The Bot's Twitch Username
+                    if bot_login.startsWith("Enter")
+                        input#bot_Login.form-control.col-lg-9(type='text' placeholder=bot_login name='bot_login' size=40 required)
+                    else 
+                        input#bot_Login.form-control.col-lg-9(type='text' value=bot_login name='bot_login' size=40 required)
+                    label(for='channel_to_moderate')
+                        strong Channel to Moderate
+                    if channel_to_moderate.startsWith("Enter")    
+                        input#channel_to_moderate.form-control.col-lg-9(type='text' name='channel_to_moderate' placeholder=channel_to_moderate size=40 required)
+                    else 
+                        input#channel_to_moderate.form-control.col-lg-9(type='text' name='channel_to_moderate' value=channel_to_moderate size=40 required)
+                    br  
+                    label(for='client_id') 
+                        strong Bot's Client ID
+                    if client_id.startsWith("Enter")
+                        input#client_id.form-control.col-lg-9(type='text' name='client_id' placeholder=client_id size=40 required)
+                    else
+                        input#client_id.form-control.col-lg-9(type='password' name='client_id' autocomplete value=client_id size=40 required)
+                    label(for='Client_secret') 
+                        strong Bot's Client Secret
+                    if client_secret.startsWith("Enter")
+                        input#client_secret.form-control.col-lg-9(type='text' name='client_secret' placeholder=client_secret size=40 required)
+                    else 
+                        input#client_secret.form-control.col-lg-9(type='password' name='client_secret' autocomplete value=client_secret size=40 required)
+
+                    input(type="checkbox" onClick='toggleVisibility()') 
+                    | Show
+                    br
+                    button.btn.btn-dark(type='submit') 
+                        strong Save Config

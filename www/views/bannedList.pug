@@ -1,0 +1,52 @@
+extends main
+block content 
+    title  Mod Bot - Banned Users
+    div(class="container-fluid" align="center" style="width:100% !important; padding:0; margin: 0;")
+        div(id="messages")
+            if flash.error
+                div(class="alert alert-danger" role="alert") #{flash.error}
+            if flash.warning
+                div(class="alert alert-warning" role="alert") #{flash.warning}
+            if flash.success
+                div(class="alert alert-success" role="alert") #{flash.success}
+            if auth_error
+                div(class="alert alert-warning" role="alert") #{auth_error}
+
+            if success
+                div(class="row")
+                    div(class="col-lg")
+                        //- div(class="alert alert-dark" role="alert" style="width: 100%;") 
+                        if unModded.length > 0 
+                            div(id=channel class="alert alert-warning" role="alert")
+                                for channel in unModded
+                                    | Bot requires mod privilege in <b>#{channel}'s</b> channel </br> 
+
+                //- div(class="row")
+                //-     div(class="col-6" id="chatBox" width="500px" height="500px") 
+                //-         h6(style='background-color:#000000; color: #6441a5;')
+                //-             strong #{channel}'s Chat                              
+                //-         iframe(id="twitch-chat-embed" src="https://www.twitch.tv/embed/" + channel + "/chat?parent=" + parent + "&darkpopout")
+
+
+
+                div(class="row" id="dataDiv" style="width:80%; padding: 0; margin: 0; filter: drop-shadow(1px 1px 2px black);")
+                    div( class="col border border-dark" id="bannedUsers" style="padding: 0; margin: 0;")    
+                        table(class="table table-dark table-striped table-hover" style="padding: 0 !important;" id="BannedUsersTable")
+                            thead 
+                                h4(style="background-color:#000000; color:red;")
+                                    strong  Banned Users
+                                th(class="border-0" hidden=true style="width:100%; padding:0; margin:0;") 
+                            tbody(style="overflow-y: scroll;") 
+                                for userInfo in bannedUsers
+                                    tr
+                                        td(class="row-sm-1")
+                                            div(class="col")
+                                                img(class="float-start userIcon" src=userInfo.profile_image_url, alt=userInfo.login)
+                                                span(class="float-start") #{userInfo.display_name} 
+                                                br
+                                                a(role="button" href=`/viewer?username=${userInfo.login}` class="float-start btn-light userIcon text-center" data-toggle="tooltip" data-bs-placement="bottom" title=`View Details` style="filter: drop-shadow(1px 1px 2px black); box-shadow: inset 0 0 10px #000000; padding: 0; background-color: #6441a5;" )
+                                                    i(class="bi bi-twitch" style="color:white;")
+                                                form(class="float-start p-0 m-0" action="/data" method="post")
+                                                    button(id="unBan" type="submit" data-toggle="tooltip" data-bs-placement="bottom" title=`Unban ${userInfo.display_name}` class="btn-success userIcon" style="filter: drop-shadow(1px 1px 2px black); box-shadow: inset 0 0 10px #000000; text-color: white; padding: 0; background-color: green;" name="unBan" value=`${userInfo.login}`) 
+                                                        i(class="bi bi-check-lg" style="color:white;")
+

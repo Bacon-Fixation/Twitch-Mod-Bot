@@ -1,0 +1,122 @@
+extends main
+block content
+    title Mod Bot - Instructions
+    script(type="text/javascript").
+        function copyToClipboard(element) {
+            var $temp = $("<input>");
+            $("body").append($temp);
+            $temp.val($(element).text()).select();
+            document.execCommand("copy");
+            $temp.remove();
+        }
+    div(class="container p-0 m-0")
+        div(class="center alert alert-dark p-0 m-0")
+            //- div(class="alert alert-dark" role="alert") 
+            h4(class="browserHeader" style="width: 100%") Open this page in a new incognito tab
+        div(class="container container-reactive")
+            div(class="mt-4" style="text-shadow: 1px 1px 2px black;")
+                h5 - Step 1 Creating Bot Account
+                p Create a 
+                    a(href='https://www.twitch.tv/signup' target="_blank") New Twitch Account 
+                    | for the 
+                    strong Mod Bot
+                    br 
+                    | Once created, enable 2 Factor Authentication for the Bot Account
+
+
+            div(class="mt-4" style="text-shadow: 1px 1px 2px black;")
+                h5 - Step 2 Creating Twitch App
+                p Login to 
+                    a(href='https://dev.twitch.tv/console' target="_blank") Twitch Dev Portal 
+                    | with your newly created Bot account 
+                    br
+                    | Now Click 
+                    a(href="https://dev.twitch.tv/console/apps/create") Register Your Application 
+                    br
+                    | Then give your application a name
+                    br
+                    | Set Category to "
+                    strong Chat Bot
+                    | "
+                    br
+                    | Add
+                    span(class="border border-dark m-1 pe-1" style="background-color: #454545 !important;") 
+                        span(class="border-end border-dark align-top pe-1 me-1")
+                            a(id="clipboardIcon" data-toggle="tooltip" data-bs-placement="bottom" title="Saved!" type="button" onclick="copyToClipboard('#redirectURL')")
+                                i(class="bi bi-clipboard-fill" style="color:white;")
+                        strong(id="redirectURL") #{redirect_uri}
+                    | to the Redirect url
+                    br
+                    | Click Save, then Click on Manage, and leave the Page Open for Step 3
+            div(class="mt-4" style="text-shadow: 1px 1px 2px black;")
+                script(type="text/javascript") function toggleVisibility() { var x = document.getElementById("client_secret"); if (x.type === "password") {  x.type = "text";  } else {    x.type = "password";  } var y = document.getElementById("client_id"); if (y.type === "password") {  y.type = "text";  } else {    y .type = "password";  } }
+
+                h5 - Step 3 Chat Bot Setup
+                form(id="botConfigForm" action='/save' method='POST')
+                    -
+                        const owner_login = bot_settings.owner_login ?? 'Enter Your Twitch Username';
+                        const bot_login = bot_settings.bot_login ?? 'Enter The Bots Username';
+                        const channel_to_moderate = bot_settings.channel_to_moderate ?? 'Enter the name of the channel';
+                        const client_id = bot_settings.client_id ?? 'Enter the Bots Client ID';
+                        const client_secret = bot_settings.client_secret?? 'Enter the Bots Client Secret';
+
+
+                    .form-group
+                        label(for='owner_login') 
+                            strong Your Twitch Username
+                        if owner_login.startsWith("Enter")
+                            input#owner_login.form-control.col-lg-9(type='text' placeholder=owner_login name='owner_login' size=40 required)
+                        else 
+                            input#owner_login.form-control.col-lg-9(type='text' value=owner_login name='owner_login' size=40 required)
+                        label(for='bot_login') 
+                            strong The Bot's Twitch Username
+                        if bot_login.startsWith("Enter")
+                            input#bot_Login.form-control.col-lg-9(type='text' placeholder=bot_login name='bot_login' size=40 required)
+                        else 
+                            input#bot_Login.form-control.col-lg-9(type='text' value=bot_login name='bot_login' size=40 required)
+                        label(for='channel_to_moderate')
+                            strong Channel to Moderate
+                        if channel_to_moderate.startsWith("Enter")    
+                            input#channel_to_moderate.form-control.col-lg-9(type='text' name='channel_to_moderate' placeholder=channel_to_moderate size=40 required)
+                        else 
+                            input#channel_to_moderate.form-control.col-lg-9(type='text' name='channel_to_moderate' value=channel_to_moderate size=40 required)
+                        br 
+                        p Now go back to the Twitch Dev Portal (from step 2), 
+                        | Copy the Client Id and paste it into the <b> Bot's Client ID </b>,
+                        br
+                        | then Click on the "New Secret" button, and Click on Yes on the pop up,
+                        br
+                        | Copy the newly created Secret and paste it into the <b>Bot's Client Secret</b>
+                        br
+                        | Click Save Config.
+                        br
+                        br
+                        label(for='client_id') 
+                            strong Bot's Client ID
+                        if client_id.startsWith("Enter")
+                            input#client_id.form-control.col-lg-9(type='text' name='client_id' placeholder=client_id size=40 required)
+                        else
+
+                            input#client_id.form-control.col-lg-9(type='password' name='client_id' autocomplete value=client_id size=40 required)
+
+                        label(for='Client_secret') 
+                            strong Bot's Client Secret
+                        if client_secret.startsWith("Enter")
+                            input#client_secret.form-control.col-lg-9(type='text' name='client_secret' placeholder=client_secret size=40 required)
+                        else 
+                            input#client_secret.form-control.col-lg-9(type='password' name='client_secret' autocomplete  value=client_secret size=40 required)
+
+                        input(type="checkbox" onClick='toggleVisibility()') 
+                        | Show
+                        br
+                        button.btn.btn-dark(type='submit') 
+                            strong Save Config
+
+            div(class="mt-4" style="text-shadow: 1px 1px 2px black;")
+                h5 - Step 4 Token
+                P goto 
+                    a(href="/token" target="") Token
+                    br
+                    | Click Start Bot, and if prompted to Log into Twitch, use the Bot Account info created in step 1 to login and authorize a user Token.
+
+

@@ -1,0 +1,57 @@
+extends main
+block content 
+    title  Mod Bot - Permitted Users
+    div(class="container-fluid" align="center" style="width:100% !important; padding:0; margin: 0;")
+        div(id="messages")
+            if flash.error
+                div(class="alert alert-danger" role="alert") #{flash.error}
+            if flash.warning
+                div(class="alert alert-warning" role="alert") #{flash.warning}
+            if flash.success
+                div(class="alert alert-success" role="alert") #{flash.success}
+            if auth_error
+                div(class="alert alert-warning" role="alert") #{auth_error}
+
+            if success
+                div(class="row")
+                    div(class="col-lg")
+                        //- div(class="alert alert-dark" role="alert" style="width: 100%;") 
+                        if unModded.length > 0 
+                            div(id=channel class="alert alert-warning" role="alert")
+                                for channel in unModded
+                                    | Bot requires mod privilege in <b>#{channel}'s</b> channel </br> 
+
+
+                //-     div(class="col-6" id="chatBox" width="500px" height="500px") 
+                //-         h6(style='background-color:#000000; color: #6441a5;')
+                //-             strong #{channel}'s Chat                              
+                //-         iframe(id="twitch-chat-embed" src="https://www.twitch.tv/embed/" + channel + "/chat?parent=" + parent + "&darkpopout")
+
+
+
+                div(class="row" id="dataDiv" style="width:80%; padding: 0; margin: 0; filter: drop-shadow(1px 1px 2px black);")
+                    div( class="col border border-dark" id="permittedUsers" style="padding: 0; margin: 0;")    
+
+                        table(class="table table-dark table-striped table-hover" id="PermittedUsersTable")
+                            p This is the list of users that have been permitted to stay in chat either because they are mods, or manually permitted via 
+                                span(class="border border-dark") ^unban 
+                                | or unbanned them through the dashboard 
+                                span(class="userIcon dot" style="background-color: green; ")
+                                    i(class="bi bi-check-lg" style="color:white;")
+                            thead 
+                                h4(style="background-color:#000000; color:green;")
+                                    strong  Permitted Users
+                                th(class="invisible w-100 p-0 m-0") 
+                            tbody 
+                                for value in permittedUsers
+                                    tr
+                                        td(class="row-sm-1")
+                                            div(class="col")
+                                                img(class="float-start userIcon" src=value.profile_image_url, alt=value.login)
+                                                span(class="float-start") #{value.display_name} 
+                                                br
+                                                a(role="button" href=`/viewer?username=${value.login}` class="float-start btn-light userIcon text-center" data-toggle="tooltip" data-bs-placement="bottom" title=`View Details` style="filter: drop-shadow(1px 1px 2px black); box-shadow: inset 0 0 10px #000000; padding: 0; background-color: #6441a5;" )
+                                                    i(class="bi bi-person-lines-fill" style="color:white;")
+                                                form(class="float-start" action="/data" method="post")
+                                                    button(id="ban" type="submit" data-toggle="tooltip" data-bs-placement="bottom" title=`Ban ${value.display_name}` class="userIcon btn-danger" style="filter: drop-shadow(1px 1px 2px black); box-shadow: inset 0 0 10px #000000; padding: 0; background-color: red;" name="ban" value=`${value.login}`)
+                                                        i( class="bi bi-slash-circle" style="color:white;")

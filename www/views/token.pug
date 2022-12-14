@@ -1,0 +1,77 @@
+extends main
+block content
+    title Mod Bot - Token
+
+    div(class="container container-reactive dark")
+        div(id="messages")
+            if flash.error
+                div(class="alert alert-danger" role="alert") #{flash.error}
+            if flash.warning
+                div(class="alert alert-warning" role="alert") #{flash.warning}
+            if flash.success
+                div(class="alert alert-success" role="alert") #{flash.success}
+            if auth_error
+                div(class="alert alert-warning" role="alert") #{auth_error}
+
+            //- div(class="alert alert-success" role="alert" id="access_token" hidden=true)
+        div(class="center alert alert-dark" role="alert") 
+            script(type="text/javascript") function toggleVisibility() { var x = document.getElementById("access_token"); if (x.type === "password") {  x.type = "text";  } else {    x.type = "password";  } }
+            h4 Login as the Bot and Authorize a Token
+            a(href="" id="auth_url" style="text-decoration: none;"  )
+                button( class="btn rounded" style="filter: drop-shadow(1px 1px 2px black); box-shadow: inset 0 0 10px #000000; background-color: #6441a5; color: white;" )
+                    strong Log In with 
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-twitch" viewBox="0 0 16 16">
+                        <path d="M3.857 0 1 2.857v10.286h3.429V16l2.857-2.857H9.57L14.714 8V0H3.857zm9.714 7.429-2.285 2.285H9l-2 2v-2H4.429V1.143h9.142v6.286z"/>
+                        <path d="M11.857 3.143h-1.143V6.57h1.143V3.143zm-3.143 0H7.571V6.57h1.143V3.143z"/>
+                        </svg> 
+                        | Twitch
+            form(id="authForm" action='token' method='post' hidden="true")
+                .form-group
+                    h5 Save your Token
+                    label(id="access_token_label" for='access_token') Access Token
+                    input.form-control.col-lg-9(id="access_token" type='password' autocomplete aria-describedby='token' name='access_token' required size="40")
+                    input(type="checkbox" onClick='toggleVisibility()') 
+                    | Show
+                    br
+                    button.btn.btn-primary(type='submit') Save
+            br
+            br
+            h6 Optional
+            p  Scope settings by Default are configured for Mod-Bots current feature set (chat read/write/moderate), but here for future expansion and development.
+            button(class="btn btn-dark rounded" data-bs-toggle="collapse" aria-expanded=true data-bs-target="#scopesList" aria-controls="scopesList") Custom Scopes 
+
+
+            div(class="card collapse" id="scopesList" style="background-color: #353535 !important;")
+
+                table(class="table table-striped table-hover" )
+
+                    for grouped, group in scopes
+                        tr
+                            th(colspan=3 style="color:#FFFFFF;") #{group}
+                        for desc, scope in grouped
+                            tr
+                                td #{scope}
+                                td #{desc}
+                                td
+                                    if group.startsWith("Chat")
+                                        input(type="checkbox" name=scope checked)
+                                    else
+                                        input(type="checkbox" name=scope)
+
+                    tr
+                        th(colspan=3 style="color:#FFFFFF;") Extra Scopes
+                    tr
+                        td Enable Force Verify
+                        td Specifies whether the user should be re-prompted for authorization. If this is true, the user always is prompted to confirm authorization. This is useful to allow your users to switch Twitch accounts, since there is no way to log users out of the API. Default: false (a given user sees the authorization page for a given set of scopes only the first time through the sequence).
+                        td
+                            input(type="checkbox" name="force_verify")
+
+
+
+
+
+
+
+
+    script(type="text/javascript") var client_id = "#{client_id}"; var redirect_uri = encodeURIComponent("#{redirect_uri}"); var state = encodeURIComponent("#{state}");
+    script(type="text/javascript" src="script.js")
