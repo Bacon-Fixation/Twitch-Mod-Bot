@@ -1,4 +1,3 @@
-import { TwitchBadgesList } from "@kararty/dank-twitch-irc";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import { URLSearchParams } from "url";
 import type {
@@ -14,12 +13,9 @@ import type {
   TwitchFollowsResponse,
   TwitchFollow,
   TwitchValidateToken,
-  TwitchInvalidateToken,
   TwitchBannedUserListResponse,
   TwitchBannedUserList,
 } from "./twitchAPI-types";
-
-// import crypto = require("crypto");
 
 // Max Number per call is 100 entries
 const chunk_size = 100;
@@ -103,7 +99,6 @@ export class TwitchAPI {
         });
 
         const response: TwitchToken = await this._auth.post(`/token?${qs}`);
-        // console.log(response);
         resolve(response);
       } catch (err) {
         reject(err);
@@ -115,7 +110,6 @@ export class TwitchAPI {
     return new Promise(async (resolve, reject) => {
       if (!this.client_id || !this.client_secret || !this._auth || !this._helix)
         return;
-
       try {
         const query = new URLSearchParams({
           client_id: this.client_id,
@@ -123,9 +117,7 @@ export class TwitchAPI {
           scope: scopes,
           grant_type: "client_credentials",
         });
-
         const response: TwitchToken = await this._auth.post(`/token?${query}`);
-
         resolve(response);
       } catch (error) {
         reject(error);
@@ -282,6 +274,40 @@ export class TwitchAPI {
       }
     });
   };
+  isFollowedAPI = async ({
+    access_token,
+    userID,
+    channelID,
+  }: {
+    access_token: string;
+    userID: string;
+    channelID: string;
+  }): Promise<boolean> => {
+    return new Promise(async (resolve, reject) => {
+      if (!this.client_id || !this.client_secret || !this._auth || !this._helix)
+        return;
+      if (userID == channelID) {
+       return resolve(true);
+
+      }
+      try {
+        const response: TwitchFollowsResponse = await this._helix.get(
+          `users/follows?from_id=${userID}&to_id=${channelID}&first=1`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+            },
+          }
+        );
+        if (response.total == 0) return resolve(false);
+        if (response.data[0].to_id == channelID) return resolve(true);
+        resolve(false);
+      } catch (err) {
+        console.log(err);
+        resolve(false);
+      }
+    });
+  };
 
   isFollowed = async ({
     channel,
@@ -293,6 +319,7 @@ export class TwitchAPI {
     return new Promise(async (resolve, reject) => {
       if (!this.client_id || !this.client_secret || !this._auth || !this._helix)
         return;
+      if (channel == user) resolve(true);
       try {
         if (!channel || !user)
           throw new Error(`Empty string in the "channel" of "user" property`);

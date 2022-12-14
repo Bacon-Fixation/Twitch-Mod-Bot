@@ -5,8 +5,6 @@ import { QuickDB } from "quick.db";
 
 import Logger from "./logger";
 import { getNoticeMessage, noticeMessages } from ".";
-// import { client } from "./server";
-// import { bot_settings } from "./server";
 
 const db = new QuickDB();
 const banned_users = db.table("banned_users");
@@ -48,7 +46,7 @@ export const banUser = async (
       return reject("Unable to find: " + user);
     }
 
-    let cmd;
+    let cmd: string;
 
     if (!reason) {
       cmd = `/ban ${username.replace("@", "")}`;
@@ -198,24 +196,21 @@ export const getUserData = async () => {
 };
 export const modifyWordBank = async (
   str: string,
-  // allow?: boolean,
   remove?: boolean,
   block?: boolean
 ) => {
   try {
     if (block && remove) {
-      // await wordBank.push("allowed", str);
-
       await wordBank.pull("blocked", str);
       return;
     }
     if (block) {
-      // await wordBank.pull("allowed", str);
       await wordBank.push("blocked", str);
       return;
     }
   } catch (error) {
-    return Logger.error("Failed to Modify the Word Bank - ", error);
+    Logger.error("Failed to Modify the Word Bank - ", error);
+    return
   }
 };
 

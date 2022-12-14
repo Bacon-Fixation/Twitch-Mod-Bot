@@ -75,9 +75,6 @@ export const convertTextToLeet = (text: string, useAdvanced = "n") => {
     }
   }
 
-  // // Show the result in console
-  // console.log(text);
-
   return text;
 };
 
@@ -87,8 +84,6 @@ export const convertLeetToText = (text: string) => {
   alphabetReversed.map((x: string[]) => {
     text = text.replace(x[0], x[1]);
   });
-
-  // console.log(text);
 
   return text;
 };
@@ -165,14 +160,6 @@ export const randArray = (array: any[]) => {
 export const addFullStop = (str: string) => {
   return str.replace(/ /g, ".");
 };
-
-// export const addUnderscore = (str: string) => {
-//   return str.replace(/ /g, "_");
-// };
-
-// export const addDash = (str: string) => {
-//   return str.replace(/ /g, "-");
-// };
 
 export const removeSpace = (str: string) => {
   return str.replace(/\s+/g, "");

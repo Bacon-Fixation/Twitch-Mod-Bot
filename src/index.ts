@@ -36,20 +36,15 @@ import {
 import Logger from "./logger";
 import { bot_settings } from "./server";
 import { invisibleChars } from "./regex";
-import {
-  PrivmsgMessage,
-  SayError,
-  UsernoticeMessage,
-} from "@kararty/dank-twitch-irc";
+import { PrivmsgMessage, SayError } from "@kararty/dank-twitch-irc";
 
 var chatCheckTimer: NodeJS.Timer;
 export var unModded: string[] = [];
 export var botReady = false;
-const regex = /su(1|i)c(1|i)d(3|e)/gi;
+
 var isStreaming: boolean = false;
 var clearedDB: boolean = false;
-// const invisibleChars =
-//   /[\u034f\u2800\u{E0000}\u180e\ufeff\u2000-\u200d\u206D]/gu;
+
 export var viewerList: TwitchViewers = {
   viewers: [],
   moderators: [],
@@ -61,7 +56,6 @@ export var viewerList: TwitchViewers = {
 };
 
 const checkChat = async (client: TwitchBot) => {
-  // console.log(await unleetify("this is a normal string"));
   if (!client) return;
 
   const channel = bot_settings.channel_to_moderate.toLowerCase();
@@ -116,11 +110,6 @@ const checkChat = async (client: TwitchBot) => {
         );
         return susChatters.push(username);
       }
-      // console.log(
-      //   viewerList.viewers[i],
-      //   searchTerm,
-      //   new RegExp(searchTerm, "gi").test(username)
-      // );
       if (new RegExp(searchTerm, "gi").test(username)) {
         Logger.info(
           `*********\nBad Name: ${chat.chatters.viewers[i]} \nTrigger: ${searchTerm}`
@@ -183,26 +172,16 @@ export const startBot = async (client: TwitchBot) => {
     Logger.info("Connecting.....");
   });
   client.on("NOTICE", async (msg) => {
-    // Logger.debug(
-    //   `Notice Message ${msg.channelName}: ${
-    //     msg.messageID ?? msg.ircTags["msg-id"] ?? ""
-    //   }\n Message: ${msg.messageText}`
-    // );
     setNoticeMessage(
       msg.messageID ?? msg.ircTags["msg-id"] ?? "",
       msg.messageText
     );
-  });
-  client.on("", (msg) => {
-    console.log(msg.ircTags);
   });
   client.on("error", (err) => {
     Logger.error(err.message);
   });
 
   client.on("ready", async () => {
-    // Logger.debug("API: " + JSON.stringify(client.twitch.auth.api));
-    // Logger.debug("TMI: " + JSON.stringify(client.twitch.auth.tmi));
     botRunning = true;
     Logger.info(
       `Successfully Connected Twitch Chat Services`,
@@ -415,8 +394,8 @@ export const startBot = async (client: TwitchBot) => {
       return;
     }
 
-    if (msg.senderUsername == bot_settings.bot_login) return;
-    if (msg.bits) {
+    if (msgData.user.login == bot_settings.bot_login) return;
+    if (msgData.bits) {
       if (
         client.twitch.stream_data.cheerers
           .toString()
@@ -428,11 +407,11 @@ export const startBot = async (client: TwitchBot) => {
     }
 
     // test username is bad
-    const followAge = await client.twitch.api.followAge({
-      channel: msg.channelName,
-      user: msg.senderUsername,
-    });
-    const difference = Date.now() - followAge;
+    // const followAge = await client.twitch.api.followAge({
+    //   channel: msg.channelName,
+    //   user: msg.senderUsername,
+    // });
+    // const difference = Date.now() - followAge;
     const okUsers: string[] = [];
     client.twitch.permitted_users.map((Value) => {
       okUsers.push(Value.login);
@@ -502,27 +481,6 @@ export const startBot = async (client: TwitchBot) => {
           return;
         }
       });
-      // if (regex.test(msg.senderUsername)) {
-      //   Logger.info(msg.senderUsername + " triggered username check");
-      // ignore user if they have a badge
-
-      // ignore user if they are followed to the channel
-      //   const followAge = await client.twitch.api.followAge({
-      //     channel: msg.channelName,
-      //     user: msg.senderUsername,
-      //   });
-      //   const difference = Date.now() - followAge;
-
-      //   console.log(msToTime(followAge));
-      //   if (
-      //     await client.twitch.api.isFollowed({
-      //       channel: msg.channelName,
-      //       user: msg.senderUsername,
-      //     })
-      //   )
-      //     return;
-      // }
-
       if (msg.messageText) {
         const filteredText = keepSpace(msg.messageText)
           .toString()
@@ -561,7 +519,6 @@ export const startBot = async (client: TwitchBot) => {
   unModded = [];
 
   client.on("USERSTATE", async (msg) => {
-    // console.log(msg);
     // check mod status on message or state change
     if (msg.displayName.toLowerCase() == bot_settings.bot_login.toLowerCase()) {
       if (!connected.includes(msg.channelName)) connected.push(msg.channelName);
@@ -661,9 +618,10 @@ export const startBot = async (client: TwitchBot) => {
     );
     // Times-out Bots that are not subbed, mod, or broadcaster when trigger is detected
     if (
-      (await client.twitch.api.isFollowed({
-        user: msg.senderUserID,
-        channel: msg.channelID,
+      (await client.twitch.api.isFollowedAPI({
+        userID: msg.senderUserID,
+        channelID: msg.channelID,
+        access_token: client.twitch.auth.api.access_token,
       })) == false
     ) {
       const reactionTime = `${Date.now() - timeStart}`;
