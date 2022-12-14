@@ -31,6 +31,7 @@ import {
   saveStreamData,
   clearSavedStreamData,
   getWordBank,
+  savePermittedUser,
 } from "./DBHandler";
 import Logger from "./logger";
 import { bot_settings } from "./server";
@@ -495,6 +496,10 @@ export const startBot = async (client: TwitchBot) => {
               msgData.channel.login,
               "Mod-Bot Inappropriate Username"
             );
+          return;
+        } else {
+          await savePermittedUser(user.login, user);
+          return;
         }
       });
       // if (regex.test(msg.senderUsername)) {
