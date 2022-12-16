@@ -1,10 +1,10 @@
-import { setNoticeMessage } from "./index";
-import { TwitchBot } from "./extendedClient";
+import { setNoticeMessage } from "../../index";
+import { TwitchBot } from "../../extendedClient";
 import { BotConfig, DBToken, StreamData, TwitchUser } from "./twitchAPI-types";
 import { QuickDB } from "quick.db";
 
 import Logger from "./logger";
-import { getNoticeMessage, noticeMessages } from ".";
+import { getNoticeMessage, noticeMessages } from "../..";
 
 const db = new QuickDB();
 const banned_users = db.table("banned_users");
@@ -210,7 +210,7 @@ export const modifyWordBank = async (
     }
   } catch (error) {
     Logger.error("Failed to Modify the Word Bank - ", error);
-    return
+    return;
   }
 };
 

@@ -1,7 +1,7 @@
 extends main
 block content
 
-    title Mod Bot - #{user.display_name} User Info
+    title Mod Bot - #{userAPI.display_name} User Info
     div(class="container-fluid" align="center" style="width:100% !important; padding:0; margin: 0; background-color: #353535 !important;" )
         div(id="messages")
             if flash.error
@@ -12,19 +12,16 @@ block content
                 div(class="alert alert-success" role="alert") #{flash.success}
             if auth_error
                 div(class="alert alert-warning" role="alert") #{auth_error}
-            //- div(class="alert alert-dark" role="alert")
 
         div(class="row" id="dataDiv" style="width:80%; padding: 0; margin: 0; filter: drop-shadow(1px 1px 2px black);")
             div( class="col border border-dark" id="userData" style="padding: 0; margin: 0;") 
                 table(class="table table-dark table-striped table-hover")
-                    strong #{user.display_name}'s Profile Info
+                    strong #{userAPI.display_name}'s Profile Info
                     tr 
                         th(colspan=2)
                             div(style="width:100% !important;")  
-                                img(class="float-right" src=user.profile_image_url, alt=`${user.display_name} Icon` )
-
-
-                    for data, id in user
+                                img(class="float-right" src=userAPI.profile_image_url, alt=`${userAPI.display_name} Icon` )
+                    for data, id in userAPI
                         if data.length > 0
                             tr
                                 if id == "created_at"

@@ -5,7 +5,7 @@ import {
   removeAccents,
   hasNumber,
   keepSpace,
-} from "./conversions";
+} from "./lib/utils/utils";
 const { unleetify } = require("./unleet.js");
 import path from "path";
 import * as dotenv from "dotenv";
@@ -20,23 +20,21 @@ import {
   MessageData,
   StreamData,
   TwitchViewers,
-} from "./twitchAPI-types";
+} from "./lib/utils/twitchAPI-types";
 import { TwitchBot } from "./extendedClient";
 
 import("./server");
 import {
-  unBanUser,
   banUser,
-  modifyWordBank,
   saveStreamData,
   clearSavedStreamData,
-  getWordBank,
   savePermittedUser,
-} from "./DBHandler";
-import Logger from "./logger";
+} from "./lib/utils/database";
+import Logger from "./lib/utils/logger";
 import { bot_settings } from "./server";
-import { invisibleChars } from "./regex";
-import { PrivmsgMessage, SayError } from "@kararty/dank-twitch-irc";
+import { invisibleChars } from "./lib/utils/regex";
+import { SayError } from "@kararty/dank-twitch-irc";
+import { commandHandler } from "./lib/misc/handler";
 
 var chatCheckTimer: NodeJS.Timer;
 export var unModded: string[] = [];
@@ -83,17 +81,22 @@ const checkChat = async (client: TwitchBot) => {
     channel: channel,
   });
   viewerList = chat.chatters;
+
   const susChatters: string[] = [];
-  const okUsers: string[] = [
-    bot_settings.bot_login,
-    bot_settings.channel_to_moderate,
-    bot_settings.owner_login,
-  ];
+
+  if (!client.twitch.okUsers.includes(bot_settings.bot_login))
+    client.twitch.okUsers.push(bot_settings.bot_login);
+  if (!client.twitch.okUsers.includes(bot_settings.owner_login))
+    client.twitch.okUsers.push(bot_settings.owner_login);
+  if (!client.twitch.okUsers.includes(bot_settings.channel_to_moderate))
+    client.twitch.okUsers.push(bot_settings.channel_to_moderate);
+
   client.twitch.permitted_users.map((val: DBTwitchUser) => {
-    okUsers.push(val.login);
+    if (!client.twitch.okUsers.includes(val.login))
+      client.twitch.okUsers.push(val.login);
   });
   for (let i = 0; i < chat.chatters.viewers.length; i++) {
-    if (okUsers.includes(chat.chatters.viewers[i])) return;
+    if (client.twitch.okUsers.includes(chat.chatters.viewers[i])) return;
     const badWords = client.twitch.wordBank.blocked;
     let username = removeAccents(chat.chatters.viewers[i]);
 
@@ -160,10 +163,10 @@ export var noticeMessages = {
 export const startBot = async (client: TwitchBot) => {
   clearInterval(chatCheckTimer);
 
-  client.on("close", (error) => {
+  client.on("close", (error?: Error) => {
     botRunning = false;
-    if (error != null) {
-      Logger.error("Client closed due to error", error);
+    if (error) {
+      Logger.error("Client closed due to error ", error);
     }
 
     clearInterval(chatCheckTimer);
@@ -224,7 +227,19 @@ export const startBot = async (client: TwitchBot) => {
       bits: msg.bits,
       prefix: "^",
 
-      send: async function (message: string, messageId?: string) {
+      send: async function (message: string, reply?: boolean) {
+        if (reply) {
+          try {
+            await client.reply(
+              this.channel.login,
+              this.messageID,
+              fitText(message, 400)
+            );
+            return;
+          } catch {
+            this.send(message);
+          }
+        }
         try {
           await client.say(this.channel.login, fitText(message, 400));
         } catch {
@@ -238,8 +253,6 @@ export const startBot = async (client: TwitchBot) => {
         }
       },
     };
-
-    if (msgData.isAction) return;
     (msgData.args = msg.messageText
       .slice(msgData.prefix?.length)
       .trim()
@@ -250,128 +263,8 @@ export const startBot = async (client: TwitchBot) => {
           ? msgData.user.name
           : msgData.user.login);
 
-    if (msgData.user.login !== bot_settings.bot_login) {
-      if (
-        msgData.text.indexOf(msgData.prefix) == 0 &&
-        msgData.commandName &&
-        msgData.args.length
-      ) {
-        if (unModded.includes(msgData.channel.login))
-          return await msgData.send(`❌ I'm not a mod in this channel`);
-
-        const user = msgData.args[0];
-
-        if (msgData.commandName == "ban") {
-          let found = false;
-          client.twitch.banned_users.map((person) => {
-            if (person.login == msgData.args![0].toLowerCase()) {
-              found = true;
-            }
-          });
-          if (!found) {
-            await banUser(
-              client,
-              user,
-              msgData.channel.login,
-              msgData.args.join(" ").replace(user, "").trim()
-            )
-              .then(
-                async () =>
-                  await msgData.send(`✅ "${msgData.args![0]}" has been banned`)
-              )
-              .catch(async (err) => {
-                if (err.includes("moderator"))
-                  return await msgData.send(
-                    `❌ ${msgData.args![0]} is a moderator`
-                  );
-                return Logger.error(err);
-              });
-
-            return;
-          } else {
-            return await msgData.send(
-              `❌ "${msgData.args[0]}" has already been Banned.`
-            );
-          }
-        }
-
-        if (msgData.commandName == "unban") {
-          let found = false;
-          client.twitch.banned_users.map((person) => {
-            if (person.login == msgData.args![0].toLowerCase()) {
-              found = true;
-            }
-          });
-          if (found) {
-            await unBanUser(client, user, msgData.channel.login)
-              .then(
-                async () =>
-                  await msgData.send(
-                    `✅ "${msgData.args![0]}" has been unbanned.`
-                  )
-              )
-              .catch(async (err) => {
-                if (err.includes("moderator"))
-                  return await msgData.send(
-                    `❌ ${msgData.args![0]} is a moderator`
-                  );
-                return Logger.error(err);
-              });
-
-            return;
-          } else {
-            return await msgData.send(
-              `❌ "${msgData.args[0]}" has not been Banned.`
-            );
-          }
-        }
-
-        if (msgData.commandName == "ban-term") {
-          if (!client.twitch.wordBank.blocked.includes(msgData.args[0])) {
-            client.twitch.wordBank.blocked.push(msgData.args[0]);
-            await modifyWordBank(msgData.args[0].trim(), false, true);
-            return msgData.send(
-              `✅ "${msgData.args[0]}" was added to the Word Bank.`
-            );
-          } else {
-            return await msgData.send(
-              `❌ "${msgData.args[0]}" already in the Word Bank.`
-            );
-          }
-        }
-
-        if (msgData.commandName == "unban-term") {
-          console.log(
-            client.twitch.wordBank.blocked.includes(msgData.args[0]),
-            msgData.args
-          );
-          if (client.twitch.wordBank.blocked.includes(msgData.args[0])) {
-            await modifyWordBank(msgData.args[0].trim(), true, true);
-            client.twitch.wordBank.blocked = [];
-            await getWordBank(client);
-            return msgData.send(
-              `✅ "${msgData.args[0]}" was removed to the Word Bank.`
-            );
-          } else {
-            return await msgData.send(
-              `❌ "${msgData.args[0]}" is not in the Word Bank.`
-            );
-          }
-        }
-      }
-    }
-    if (msgData.commandName == "banned-users") {
-      return console.log(
-        await client.twitch.api
-          .getBannedUsers({
-            access_token: client.twitch.auth.api.access_token,
-            broadcaster_id: msgData.channel.id,
-          })
-          .catch((err) => console.log(err))
-      );
-    }
     if (
-      msg.messageText === "!binxraid" &&
+      msgData.text.toLowerCase() === "!binxraid" &&
       client.twitch.stream_data.binxRaids
         .toString()
         .includes(msg.displayName.toString()) === false
@@ -379,22 +272,7 @@ export const startBot = async (client: TwitchBot) => {
       client.twitch.stream_data.binxRaids.push(`${msg.displayName}`);
       await saveStreamData("binxRaids", client.twitch.stream_data.binxRaids);
     }
-    if (msg.messageText === "!test") {
-      console.log(client.twitch.auth);
-      console.log(
-        await client.twitch.api
-          .getBannedUsers({
-            access_token: client.twitch.auth.api.access_token,
-            broadcaster_id: msg.channelID,
-          })
-          .catch((err) => {
-            console.log(err);
-          })
-      );
-      return;
-    }
 
-    if (msgData.user.login == bot_settings.bot_login) return;
     if (msgData.bits) {
       if (
         client.twitch.stream_data.cheerers
@@ -412,19 +290,56 @@ export const startBot = async (client: TwitchBot) => {
     //   user: msg.senderUsername,
     // });
     // const difference = Date.now() - followAge;
-    const okUsers: string[] = [];
-    client.twitch.permitted_users.map((Value) => {
-      okUsers.push(Value.login);
-    });
+    if (msgData.user.perms.mod) {
+      if (!client.twitch.modded_users.includes(msgData.user.login))
+        client.twitch.modded_users.push(msgData.user.login);
+    }
+    if (msgData.user.perms.vip) {
+      if (!client.twitch.vip_users.includes(msgData.user.login))
+        client.twitch.vip_users.push(msgData.user.login);
+    }
+    if (msgData.user.perms.mod || msgData.user.perms.vip) {
+      if (!client.twitch.okUsers.includes(msgData.user.login))
+        client.twitch.okUsers.push(msgData.user.login);
+    }
+    commandHandler(client, msgData);
+    // Follow Bot Ad Removal
 
-    const susChatters: string[] = [];
     if (
       msgData.user.perms.broadcaster ||
       msgData.user.perms.mod ||
-      msgData.user.perms.vip
+      msgData.user.perms.vip ||
+      msgData.user.perms.owner
     )
       return;
-    if (okUsers.includes(msgData.user.login)) return;
+
+    if (msgData.text) {
+      const filteredText = keepSpace(msg.messageText).toString().toLowerCase();
+
+      if (
+        filteredText.includes("follower") &&
+        filteredText.includes("viewer")
+      ) {
+        try {
+          await isFollowBot(msgData);
+        } catch (err) {
+          Logger.error(err);
+        }
+      }
+      if (
+        filteredText.includes("Get") &&
+        filteredText.includes("prime-subs") &&
+        filteredText.includes("viewer")
+      )
+        try {
+          await isFollowBot(msgData);
+        } catch (err) {
+          Logger.error(err);
+        }
+    }
+    const susChatters: string[] = [];
+
+    if (client.twitch.okUsers.includes(msgData.user.login)) return;
     const badWords = client.twitch.wordBank.blocked;
     let username = removeAccents(msgData.user.login);
 
@@ -436,13 +351,13 @@ export const startBot = async (client: TwitchBot) => {
       const nameIterations = (await unleetify(username)) as string[];
       // Basic Compare - see if the username iteration matches the search term directly
       if (nameIterations.includes(searchTerm)) {
-        Logger.info(
+        Logger.warn(
           `*********\nBad Name: ${msgData.user.name}\nTrigger: ${searchTerm} \n`
         );
         return susChatters.push(msgData.user.name);
       }
       if (new RegExp(searchTerm, "gi").test(username)) {
-        Logger.info(
+        Logger.warn(
           `*********\nBad Name: ${msgData.user.name} \nTrigger: ${searchTerm}`
         );
         return susChatters.push(msgData.user.name);
@@ -451,7 +366,7 @@ export const startBot = async (client: TwitchBot) => {
       if (hasNumber(username)) {
         for (let i = 0; i < nameIterations.length; ++i) {
           if (new RegExp(searchTerm, "gi").test(nameIterations[i])) {
-            Logger.info(
+            Logger.warn(
               `*********\nBad Name: ${msgData.user.name}\nTrigger: ${searchTerm}\nUnleet: ${nameIterations[i]}`
             );
             susChatters.push(msgData.user.name);
@@ -481,32 +396,6 @@ export const startBot = async (client: TwitchBot) => {
           return;
         }
       });
-      if (msg.messageText) {
-        const filteredText = keepSpace(msg.messageText)
-          .toString()
-          .toLowerCase();
-
-        if (
-          filteredText.includes("follower") &&
-          filteredText.includes("viewer")
-        ) {
-          try {
-            await isFollowBot(msg);
-          } catch (err) {
-            Logger.error(err);
-          }
-        }
-        if (
-          filteredText.includes("Get") &&
-          filteredText.includes("prime-subs") &&
-          filteredText.includes("viewer")
-        )
-          try {
-            await isFollowBot(msg);
-          } catch (err) {
-            Logger.error(err);
-          }
-      }
     });
   });
   const connected: string[] = [];
@@ -526,9 +415,28 @@ export const startBot = async (client: TwitchBot) => {
         if (!unModded.includes(msg.channelName)) unModded.push(msg.channelName);
       }
 
-      if (connected.length == tmiConnect.length) {
+      if (connected.length == tmiConnect.length && !botReady) {
         botReady = true;
         if (!botRunning) return;
+        const VIPList = await client
+          .getVips(bot_settings.channel_to_moderate.toLowerCase())
+          .catch((err) => {
+            Logger.error(err);
+            return [];
+          });
+        client.twitch.vip_users = [...VIPList];
+        const ModList = await client
+          .getMods(bot_settings.channel_to_moderate.toLowerCase())
+          .catch((err) => {
+            Logger.error(err);
+            return [];
+          });
+        client.twitch.modded_users = [...ModList];
+        client.twitch.okUsers = [...ModList];
+        VIPList.forEach((user) => {
+          if (!client.twitch.okUsers.includes(user))
+            client.twitch.okUsers.push(user);
+        });
         await checkChat(client);
         chatCheckTimer = setInterval(() => {
           if (!botRunning) return clearInterval(chatCheckTimer);
@@ -538,10 +446,10 @@ export const startBot = async (client: TwitchBot) => {
     }
   });
   client.on("JOIN", async ({ channelName }) => {
-    Logger.info(`connected to: ${channelName}'s channel`);
+    Logger.info(`Connected to: ${channelName}'s channel`);
   });
   client.on("PART", async ({ channelName }) => {
-    Logger.info(`disconnected from: ${channelName}'s channel`);
+    Logger.info(`Disconnected from: ${channelName}'s channel`);
   });
 
   client.on("USERNOTICE", async (msg) => {
@@ -610,45 +518,43 @@ export const startBot = async (client: TwitchBot) => {
   // Connect
   await client.connect();
   await client.joinAll(tmiConnect);
-  async function isFollowBot(msg: PrivmsgMessage) {
+  async function isFollowBot(msg: MessageData) {
+    if (
+      msg.user.perms.broadcaster ||
+      msg.user.perms.mod ||
+      msg.user.perms.vip ||
+      msg.user.perms.owner ||
+      msg.user.badges.length > 0
+    )
+      return;
     const timeStart = Date.now();
     Logger.info("Follow bot message an action: " + msg.isAction);
     Logger.info(
-      `Follow Bot Triggered:(${msg.channelName}) ${msg.senderUsername} | "${msg.messageText}"`
+      `Follow Bot Triggered:(${msg.channel.login}) ${msg.user.name} | "${msg.text}"`
     );
     // Times-out Bots that are not subbed, mod, or broadcaster when trigger is detected
     if (
       (await client.twitch.api.isFollowedAPI({
-        userID: msg.senderUserID,
-        channelID: msg.channelID,
+        userID: msg.user.id,
+        channelID: msg.channel.id,
         access_token: client.twitch.auth.api.access_token,
       })) == false
     ) {
       const reactionTime = `${Date.now() - timeStart}`;
       Logger.info(
-        `Not Followed Bot Triggered:(${msg.channelName}) ${msg.senderUsername} | "${msg.messageText} - ${reactionTime}ms"`
+        `Not Followed Bot Triggered:(${msg.channel.login}) ${msg.user.name} | "${msg.text} - ${reactionTime}ms"`
       );
-      await client
-        .me(
-          msg.channelName,
-          `‼️ Follow Bot - ${msg.senderUsername} message removed. - ${reactionTime}ms`
-        )
-        .catch(async (error) => {
-          if (error instanceof SayError) {
-            await client.say(
-              msg.channelName,
-              `‼️ Follow Bot - ${msg.senderUsername} message removed. - ${reactionTime}ms`
-            );
-          }
-        });
-      await client.deleteMsg(msg.channelName, msg.messageID);
+      await client.deleteMsg(msg.channel.login, msg.messageID);
+      await msg.send(
+        `‼️ Follow Bot - ${msg.user.name} message removed. - ${reactionTime}ms`
+      );
 
-      await client.timeout(
-        msg.channelName,
-        msg.senderUsername,
-        60,
-        "Possible Follow Bot."
-      );
+      // await client.timeout(
+      //   msg.channelName,
+      //   msg.senderUsername,
+      //   60,
+      //   "Possible Follow Bot."
+      // );
     }
     return;
   }
@@ -656,7 +562,7 @@ export const startBot = async (client: TwitchBot) => {
 
 function msToTime(query: number) {
   let duration = Date.now() - query;
-  let milliseconds = Math.floor((duration % 1000) / 100),
+  let //milliseconds = Math.floor((duration % 1000) / 100),
     seconds = Math.floor((duration / 1000) % 60),
     minutes = Math.floor((duration / (1000 * 60)) % 60),
     hours = Math.floor((duration / (1000 * 60 * 60)) % 24);

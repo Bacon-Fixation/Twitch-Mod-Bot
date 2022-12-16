@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import { URLSearchParams } from "url";
+import Logger from "./logger";
 import type {
   TwitchToken,
   TwitchUser,
@@ -124,36 +125,6 @@ export class TwitchAPI {
       }
     });
   };
-  // getIRCAccessToken = (scopes: string): Promise<TwitchToken> => {
-  //   return new Promise(async (resolve, reject) => {
-  //     if (!this.client_id || !this.client_secret || !this._auth || !this._helix)
-  //       return;
-
-  //     try {
-  //       const response = await axios.post(
-  //         "https://id.twitch.tv/oauth2/token",
-  //         {
-  //           client_id: process.env.TWITCH_CLIENT_ID,
-  //           client_secret: process.env.TWITCH_CLIENT_SECRET,
-  //           // code: getCode.data.code,
-  //           grant_type: "authorization_code",
-  //           redirect_uri: process.env.REDIRECT_URI,
-  //         },
-  //         {
-  //           headers: {
-  //             Accept: "application/json",
-  //           },
-  //           responseType: "json",
-  //         }
-  //       );
-
-  //       resolve(response.data);
-  //     } catch (error) {
-  //       console.log(error);
-  //       reject(error);
-  //     }
-  //   });
-  // };
   getFollows = async ({
     twitch_access_token,
     channel_id: to_id,
@@ -287,8 +258,7 @@ export class TwitchAPI {
       if (!this.client_id || !this.client_secret || !this._auth || !this._helix)
         return;
       if (userID == channelID) {
-       return resolve(true);
-
+        return resolve(true);
       }
       try {
         const response: TwitchFollowsResponse = await this._helix.get(
@@ -303,7 +273,7 @@ export class TwitchAPI {
         if (response.data[0].to_id == channelID) return resolve(true);
         resolve(false);
       } catch (err) {
-        console.log(err);
+        Logger.error(err);
         resolve(false);
       }
     });
@@ -597,7 +567,7 @@ export class TwitchAPI {
     broadcaster_id: broadcaster_id,
   }: {
     access_token: string;
-    broadcaster_id?: string;
+    broadcaster_id: string;
   }): Promise<TwitchBannedUserList[]> => {
     return new Promise(async (resolve, reject) => {
       if (!this.client_id || !this.client_secret || !this._auth || !this._helix)
@@ -628,7 +598,7 @@ export class TwitchAPI {
             {
               headers: {
                 Authorization: `Bearer ${access_token}`,
-                // "Client-Id": this.client_id
+                "Client-Id": this.client_id,
               },
             }
           );
@@ -643,7 +613,6 @@ export class TwitchAPI {
             });
           }
         }
-        console.log(result);
         resolve(result);
       } catch (err) {
         reject(err);

@@ -1,5 +1,4 @@
 import humanize from "humanize-duration";
-import Filter from "bad-words";
 
 const alphabetBasic: any = {
   a: "4",
@@ -29,7 +28,7 @@ const alphabetAdvanced: any = {
   y: "'/",
 };
 
-const alphabetReversed: any = [
+const alphabetReversed: Array<[RegExp, string]> = [
   [/(\|\\\/\|)/g, "m"],
   [/(\|\\\|)/g, "n"],
   [/(\()/g, "c"],
@@ -57,7 +56,7 @@ const alphabetReversed: any = [
 // Convert input into l33t
 export const convertTextToLeet = (text: string, useAdvanced = "n") => {
   for (let i = 0; i < text.length; i++) {
-    let alphabet;
+    let alphabet: any;
     let letter = text[i].toLowerCase();
 
     if (useAdvanced.toLowerCase() === "y") {
@@ -81,7 +80,7 @@ export const convertTextToLeet = (text: string, useAdvanced = "n") => {
 export const convertLeetToText = (text: string) => {
   text = text.toLowerCase();
 
-  alphabetReversed.map((x: string[]) => {
+  alphabetReversed.map((x) => {
     text = text.replace(x[0], x[1]);
   });
 
@@ -174,7 +173,7 @@ export const removeDash = (str: string) => {
 // Filtering End
 
 // Sanitizing
-exports.sanitize = (str: string) => {
+export const sanitize = (str: string) => {
   return str.replace(/[^a-zA-Z0-9]/g, "");
 };
 
@@ -640,9 +639,6 @@ export const hasAccents = function (string: string) {
 export const hasNumber = function (string: string) {
   return /\d/g.test(string);
 };
-
-const filter = new Filter();
-// console.log(filter.isProfane("Don't be an ash0le"));
 
 export const removeFromArray = function (array: any[], value: string | number) {
   return array.filter((item) => {

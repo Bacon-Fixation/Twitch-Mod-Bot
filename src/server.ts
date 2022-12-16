@@ -1,8 +1,11 @@
-import { removeFromArray } from "./conversions";
-// import { humanize } from 'humanize-duration';
+import { removeFromArray } from "./lib/utils/utils";
 import { TwitchBot } from "./extendedClient";
-import { botReady, botRunning, startBot, unModded, viewerList } from "./index";
-import { BotConfig, TwitchToken, TwitchUser } from "./twitchAPI-types";
+import { botRunning, startBot, unModded, viewerList } from "./index";
+import {
+  BotConfig,
+  TwitchToken,
+  TwitchUser,
+} from "./lib/utils/twitchAPI-types";
 import {
   banUser,
   deleteBannedUser,
@@ -13,10 +16,9 @@ import {
   modifyWordBank,
   saveAccessToken,
   saveConfig,
-  savePermittedUser,
   saveUserData,
   unBanUser,
-} from "./DBHandler";
+} from "./lib/utils/database";
 import fs from "fs";
 import path from "path";
 import * as dotenv from "dotenv";
@@ -40,22 +42,20 @@ loadAccessToken();
 
 import bodyParser from "body-parser";
 
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 
 import * as crypto from "crypto";
 // got is used for HTTP/API requests
 
 import axios, { AxiosError, AxiosResponse } from "axios";
-import Logger from "./logger";
-import { humanizeMS } from "./conversions";
+import Logger from "./lib/utils/logger";
+import { humanizeMS } from "./lib/utils/utils";
 
 // Express basics
 const app = express();
 
-// console.log(results);
 const http = require("http").Server(app);
 http.listen(process.env.PORT, function () {
-  // console.log();
   Logger.info("Dashboard loaded");
   Logger.info(
     `${process.env.REDIRECT_URI?.replace(
@@ -75,7 +75,7 @@ var tokens: TwitchToken = {
 export var dryRun = true;
 var botInfo: TwitchUser;
 var userInfo: TwitchUser;
-var user: TwitchUser;
+var user: TwitchUser | undefined;
 var isValidToken: boolean = false;
 var state = crypto.randomBytes(16).toString("base64");
 
@@ -128,6 +128,7 @@ app.use(function (req: any, res, next) {
 
 app.get("/", (req, res) => {
   res.render("index", {
+    user,
     bot_settings,
     redirect_uri: process.env.REDIRECT_URI,
   });
@@ -311,8 +312,8 @@ app.get("/stream", (req: any, res, next) => {
     startTimeRaw = new Date(stream.started_at).valueOf();
   }
 
-  // console.log(stream);
   res.render("stream", {
+    user,
     streamData: liveData,
     stream,
     streamDataLength,
@@ -331,9 +332,32 @@ app.post("/save", async (req: any, res) => {
     channel_to_moderate: inputs.channel_to_moderate,
     client_id: inputs.client_id,
     client_secret: inputs.client_secret,
+  }).catch((err) => {
+    req.session.error = "Failed to Save your setting, Please try again.";
+    return;
   });
+  req.session.success = "Configuration has been saved.";
+  if (
+    inputs.client_id !== bot_settings.client_id ||
+    inputs.client_secret !== bot_settings.client_secret ||
+    inputs.channel_to_moderate !== bot_settings.channel_to_moderate
+  ) {
+    if (client && botRunning) {
+      client.destroy({
+        name: "Configuration has been changed",
+        message: "Client is shutting down",
+      });
+      // client = undefined;
+    }
 
+    req.session.success =
+      "Configuration has been saved.\nPlease authorize a new token with your new config settings";
+    bot_settings = inputs;
+    res.redirect("/token");
+    return;
+  }
   bot_settings = inputs;
+
   return res.redirect("back");
 });
 app.get("/viewer", async (req: any, res) => {
@@ -345,14 +369,14 @@ app.get("/viewer", async (req: any, res) => {
   if (!req.query.username)
     return res.render("error", { message: "Invalid Request", status: 500 });
   try {
-    const user = await client!.twitch.api.getUsers({
+    const userAPI = await client!.twitch.api.getUsers({
       logins: [req.query.username],
       token: client!.twitch.auth.api.access_token,
     });
     const ageHumanized = humanizeMS(
-      Date.now() - new Date(user[0].created_at).valueOf()
+      Date.now() - new Date(userAPI[0].created_at).valueOf()
     );
-    res.render("userInfo", { user: user[0], ageHumanized });
+    res.render("userInfo", { userAPI: userAPI[0], ageHumanized, user });
   } catch (err) {
     Logger.error(err);
   }
@@ -382,7 +406,6 @@ app.post("/token", async (req: any, res) => {
     client.twitch.auth.tmi.access_token = token;
     await startBot(client);
   }
-
   if (!user) {
     const userAPI = await axios.get("https://api.twitch.tv/helix/users", {
       headers: {
@@ -393,6 +416,8 @@ app.post("/token", async (req: any, res) => {
       responseType: "json",
     });
     user = userAPI.data.data[0] as TwitchUser;
+    botInfo = userAPI.data[0] as TwitchUser;
+    if (client) client!.twitch.bot = userAPI.data[0] as TwitchUser;
   }
   await saveAccessToken({
     access_token: tokens.access_token,
@@ -406,7 +431,19 @@ app.post("/token", async (req: any, res) => {
 });
 
 app.route("/config").get((req, res) => {
-  res.render("config", { bot_settings });
+  res.render("config", { user, bot_settings });
+});
+
+app.route("/chat").get((req, res) => {
+  res.render("chat", {
+    user,
+    unModded,
+    channel: bot_settings.channel_to_moderate,
+    parent: process.env
+      .REDIRECT_URI!.replace("/token", "")
+      .replace("http://", "")
+      .replace(":8000", ""),
+  });
 });
 
 app.route("/token").get((req: any, res: Response) => {
@@ -447,26 +484,25 @@ app.route("/token").get((req: any, res: Response) => {
   }
   req.session.state = crypto.randomBytes(16).toString("base64");
   res.render("token", {
+    user,
     client_id: bot_settings.client_id,
     redirect_uri: process.env.REDIRECT_URI,
     state: state,
     tokenInfo,
     scopes: JSON.parse(
-      //@ts-ignore
-      fs.readFileSync(path.join(__dirname, "../www/scopes.json"))
+      `${fs.readFileSync(path.join(__dirname, "../www/scopes.json"))} `
     ),
   });
 });
 app.route("/filtering").get((req: any, res) => {
   if (client) {
     const badWords = client.twitch.wordBank.blocked;
-    res.render("filtering", { badWords, viewerList });
+    res.render("filtering", { user, badWords, viewerList });
   } else res.redirect("/token");
 });
 
 app.route("/logout").get((req: any, res) => {
   Logger.info("Logging Out");
-  // console.log(tokens);
   isValidToken = false;
   if (client) {
     client.destroy();
@@ -474,6 +510,7 @@ app.route("/logout").get((req: any, res) => {
     client.close();
     client = undefined;
   }
+  user = undefined;
   req.session.success = `${bot_settings.bot_login} has left chat`;
   if (tokens.access_token.length == 0) {
     res.redirect("/token");
@@ -490,13 +527,12 @@ app.route("/logout").get((req: any, res) => {
     )
 
     .then((resp: AxiosResponse) => {
-      // console.log(resp);
       req.session.success = "Log Out Successful Token has been disabled";
-      Logger.info("KeyRevoke OK", JSON.stringify(resp.data));
+      Logger.info("Token has been disabled", JSON.stringify(resp.data));
     })
     .catch((err: AxiosError) => {
       req.session.error = "Log Out Unsuccessful: Error revoking token";
-      Logger.error("KeyRevoke Fail", err);
+      Logger.error("Error revoking token", err);
     });
 
   res.redirect("/token");
@@ -510,6 +546,7 @@ app.use(function (req, res, next) {
 app.use(function (err: any, req: any, res: any, next: any) {
   res.status(err.status || 500);
   res.render("error", {
+    user,
     message: err.message.replace(__dirname, ""),
     status: err.status,
   });
@@ -518,6 +555,7 @@ app.use(function (err: any, req: any, res: any, next: any) {
 function loadAccessToken() {
   getSavedAccessToken().then((db) => {
     if (db.length == 0) return;
+    Logger.info("Checking Token Status...");
     return db.map((data: any) => {
       axios
         .get("https://id.twitch.tv/oauth2/validate", {

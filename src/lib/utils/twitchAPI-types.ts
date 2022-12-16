@@ -22,13 +22,27 @@ export interface ClientTwitchExtension {
   };
   banned_users: DBTwitchUser[];
   permitted_users: DBTwitchUser[];
+  modded_users: string[];
+  vip_users: string[];
+  okUsers: string[];
   bot: TwitchUser;
   wordBank: {
-    // allowed: string[];
     blocked: string[];
   };
   stream_data: StreamData;
   stream?: TwitchStream;
+}
+
+export interface ClientCommandData {
+  name: string;
+  category: string;
+  aliases?: string[];
+  description: string;
+  access: string;
+  accessBadge?: string;
+  cooldown?: number;
+  usage?: string;
+  example?: string;
 }
 
 export interface TwitchUser {
@@ -151,7 +165,7 @@ export interface MessageData {
   args?: string[];
   prefix: string;
   commandName?: string;
-  send: (message: string) => Promise<void>;
+  send: (message: string, reply?: boolean) => Promise<void>;
 }
 
 export interface TwitchValidateToken {
@@ -206,7 +220,6 @@ export interface StreamData {
   subs: string[];
   reSubs: string[];
   gifters: any;
-  // seedBank: liveData.seedBank ?? [],
   welcomeList: string[];
   cheerers: string[];
   binxRaids: string[];
