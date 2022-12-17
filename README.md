@@ -31,7 +31,7 @@ Currently list of available features
 - Remove Follow Bot Ads from chat automatically
 - Track Stream events like subs, raiders, gifters, bits, etc... per stream (long term Stream Metrics not available yet)
 - Mod-Bot can be controlled by other Mods with Text Commands `^commands` or locally with a web browser (Dashboard)
-- Expandable Command Framework ([Command Template](https://github.com/Bacon-Fixation/Twitch-Mod-Bot/wiki/Creating-Custom-Command#custom-command-template))
+- Expandable Command Framework ([Command Template](https://github.com/Bacon-Fixation/Twitch-Mod-Bot/wiki/Creating-Custom-Commands#custom-command-template))
 - Both Twitch TMI IRC (Twitch Chat) and Twitch API Support
 - Error Logging: all errors are save to a log file in `./Twitch-Mod-Bot/logs/` (only keeps the last 14 logs)
 
