@@ -50,7 +50,7 @@ Currently list of available features
 being a work in progress, here is whats planned 
 - Make the Account Age and Follow Age Limits adjustable
 - Make Keywords for the Follow Bot triggers custumizable
-- Switch to using the Prisma instead of quick.db (Database Optimizations)
+- Switch to using Prisma instead of quick.db (Database Optimizations)
 - Add Command Cooldowns (prevent command spamming)
 - Stream to Stream Metrics (help track growth)
 - Auto Welcome and/or Shout-out specific users with persnalized messages
