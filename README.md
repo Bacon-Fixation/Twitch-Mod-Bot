@@ -35,7 +35,18 @@ Currently list of available features
 - Both Twitch TMI IRC (Twitch Chat) and Twitch API Support
 - Error Logging: all errors are save to a log file in `./Twitch-Mod-Bot/logs/` (only keeps the last 14 logs)
 
+## Commands
+
+|   Command   	|                    Description                    	|         Example        	|
+|:-----------:	|:-------------------------------------------------:	|:----------------------:	|
+| ^ban        	| Ban a user from the channel                       	| ^ban @bacon_fixation   	|
+| ^unban      	| Unban a user from channel                         	| ^unban @bacon_fixation 	|
+| ^ban-term   	| Add a Keyword to Auto Ban Users                   	| ^ban-term bacon        	|
+| ^unban-term 	| Remove a Keyword from Word Bank                   	| ^unban-term bacon      	|
+| ^help       	| Shows the current Command List or Command Details 	| ^help or ^help ban     	|
+
 ## To Do
+
 being a work in progress, here is whats planned 
 - Make the Account Age and Follow Age Limits adjustable
 - Make Keywords for the Follow Bot triggers custumizable
