@@ -1,10 +1,11 @@
-import { TwitchBot } from "./../../extendedClient";
-import { bot_settings } from "./../../server";
-import { MessageData } from "../utils/twitchAPI-types";
-import { invisibleChars } from "../utils/regex";
-import * as commands from "../misc/commands";
-import Logger from "../utils/logger";
-import * as utils from "../utils/utils";
+import { TwitchBot } from '../../extendedClient';
+import { bot_settings } from '../../server';
+import * as commands from '../misc/commands';
+import Logger from '../utils/logger';
+import { invisibleChars } from '../utils/regex';
+import { MessageData } from '../utils/twitchAPI-types';
+import * as utils from '../utils/utils';
+
 export async function commandHandler(client: TwitchBot, msg: MessageData) {
   if (msg.user.login !== bot_settings.bot_login) {
     msg.prefix = "^";

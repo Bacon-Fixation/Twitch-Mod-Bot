@@ -1,7 +1,7 @@
-import { banUser } from "../../utils/database";
-import Logger from "../../utils/logger";
-import { MessageData } from "../../utils/twitchAPI-types";
-import { TwitchBot } from "./../../../extendedClient";
+import { TwitchBot } from '../../../extendedClient';
+import { banUser } from '../../utils/database';
+import Logger from '../../utils/logger';
+import { MessageData } from '../../utils/twitchAPI-types';
 
 module.exports = {
   name: "ban",

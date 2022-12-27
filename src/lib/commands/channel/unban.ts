@@ -1,8 +1,8 @@
+import { TwitchBot } from '../../../extendedClient';
 // import { ClientCommandData } from "./../../../twitchAPI-types";
-import { unBanUser } from "../../utils/database";
-import Logger from "../../utils/logger";
-import { MessageData } from "../../utils/twitchAPI-types";
-import { TwitchBot } from "./../../../extendedClient";
+import { unBanUser } from '../../utils/database';
+import Logger from '../../utils/logger';
+import { MessageData } from '../../utils/twitchAPI-types';
 
 module.exports = {
   name: "unban",

@@ -1,9 +1,6 @@
 extends main
 block content
     title Mod Bot - Token
-
-
-
     div(class="container-fluid")
         div(id="messages")
             if flash.error
@@ -54,11 +51,27 @@ block content
                         td
                             input(type="checkbox" name="force_verify")
         div(id="authDiv" class="center border border-dark" style="" )  
+            - const savedToken = tokens.access_token ?? ""
+            if tokens && user
+                div
+                    table 
+                        tr
+                            th(colspan=2) Token Details
+                        tr
+                            td User 
+                            td= user.login 
+                        tr 
+                            td Scopes 
+                            td= tokens.scopes.join(" ")
+                        tr
+                            td Expires
+                            td= new Date(Date.now()+tokens.expires_in)
+
             form(id="authForm" action='token' method='post' hidden="true")
                 .form-group
                     h5 Save your Token
                     label(id="access_token_label" for='access_token') Access Token
-                    input.form-control.col-lg-9(id="access_token" type='password' autocomplete aria-describedby='token' name='access_token' required size="40")
+                    input.form-control.col-lg-9(id="access_token" type='password' autocomplete aria-describedby='token' name='access_token' value=savedToken required size="40")
                     input(type="checkbox" onClick='toggleVisibility()') 
                     | Show
                     br
@@ -71,6 +84,11 @@ block content
             }
         });
         function auth() {
+            if(#{botRunning}) {
+                document.getElementById("authForm").hidden = false;
+                document.getElementById("LoginDiv").hidden = true;
+                return
+                }
             document.getElementById("authForm").hidden = true;
             document.getElementById("LoginDiv").hidden = false;
             if (document.location.hash && document.location.hash != "") {
@@ -97,6 +115,7 @@ block content
             }
         }
         auth();
+
 
         function generate() {
             var force_verify = "false";

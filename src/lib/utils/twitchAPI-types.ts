@@ -1,9 +1,5 @@
-import {
-  Color,
-  IRCMessageTags,
-  TwitchBadgesList,
-  TwitchEmoteList,
-} from "@kararty/dank-twitch-irc";
+import { Color, IRCMessageTags, TwitchBadgesList, TwitchEmoteList } from '@kararty/dank-twitch-irc';
+
 import type { TwitchAPI } from "./twitchAPI";
 
 export interface TwitchToken {

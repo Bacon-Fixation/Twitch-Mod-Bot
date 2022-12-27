@@ -1,6 +1,8 @@
-import axios, { AxiosInstance, AxiosResponse } from "axios";
-import { URLSearchParams } from "url";
-import Logger from "./logger";
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { URLSearchParams } from 'url';
+
+import Logger from './logger';
+
 import type {
   TwitchToken,
   TwitchUser,

@@ -1,8 +1,13 @@
 {
-  "name": "Twitch-Mod-Bot",
+  "name": "twitch-mod-bot",
   "version": "0.2.1",
   "main": "index.js",
   "type": "commonjs",
+  "private": true,
+  "description": "a Twitch Bot for channel moderation, auto follow bot ad message removal, and ban inappropriate usernames with keywords",
+  "engines": {
+    "node": ">=16.0.0 <19.0.0"
+  },
   "dependencies": {
     "@cityssm/unleet": "^2.4.0",
     "@kararty/dank-twitch-irc": "^5.0.0",
@@ -27,7 +32,6 @@
   },
   "author": "Bacon_Fixation",
   "license": "ISC",
-  "description": "A special request",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Bacon-Fixation/Twitch-Mod-Bot.git"

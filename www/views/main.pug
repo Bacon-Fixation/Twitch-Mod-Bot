@@ -227,10 +227,15 @@ html(lang="en")
     .container-fluid
         .row.flex-nowrap
             .col-auto.col-md-1.col-xl-2.px-sm-2.px-0.bg-dark
-                .d-flex.flex-column.align-items-center.align-items-sm-start.px-3.pt-2.text-white.min-vh-100
+                .d-flex.flex-column.align-items-center.align-items-sm-start.px-3.pt-2.text-white.min-vh-100(style="text-shadow: 1px 1px 1px black;")
                     a.d-flex.align-items-center.pb-3.mb-md-0.me-md-auto.text-white.text-decoration-none(href='/')
                         img(class='navbarImage' src='../static/favicon-32x32.png' alt='Logo')       
-                        span.ms-1.d-none.d-sm-inline Mod Bot
+                        span.ms-1.d-none.d-sm-inline Mod Bot 
+                        if botRunning
+                            span.ms-1.d-none.d-sm-inline(style="color:#00EE00; text-shadow: 1px 1px 1px black;") Connected
+                        else
+                            span.ms-1.d-none.d-sm-inline(style="color:#DD0000; text-shadow: 1px 1px 1px black;") Disconnected
+
                     ul#menu.nav.nav-pills.flex-column.mb-sm-auto.mb-0.align-items-center.align-items-sm-start(class="hover")
                         li.w-100
                             a.nav-link.px-0(id="instructionsNav" href='/')

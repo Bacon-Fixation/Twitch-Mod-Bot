@@ -1,6 +1,7 @@
-import { MessageData } from "./../../utils/twitchAPI-types";
-import { TwitchBot } from "./../../../extendedClient";
-import * as commands from "../../misc/commands";
+import { TwitchBot } from '../../../extendedClient';
+import * as commands from '../../misc/commands';
+import { MessageData } from '../../utils/twitchAPI-types';
+
 module.exports = {
   name: "help",
   category: "basic",

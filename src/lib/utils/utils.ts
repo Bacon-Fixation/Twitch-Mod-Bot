@@ -1,4 +1,7 @@
-import humanize from "humanize-duration";
+import humanize from 'humanize-duration';
+import { TwitchBot } from '../../extendedClient';
+import Logger from './logger';
+import { MessageData } from './twitchAPI-types';
 
 const alphabetBasic: any = {
   a: "4",
@@ -645,3 +648,44 @@ export const removeFromArray = function (array: any[], value: string | number) {
     return item != value;
   });
 };
+
+  async function isFollowBot(client: TwitchBot, msg: MessageData) {
+    if (
+      msg.user.perms.broadcaster ||
+      msg.user.perms.mod ||
+      msg.user.perms.vip ||
+      msg.user.perms.owner ||
+      msg.user.badges.length > 0
+    )
+      return;
+    const timeStart = Date.now();
+    Logger.info("Follow bot message an action: " + msg.isAction);
+    Logger.info(
+      `Follow Bot Triggered:(${msg.channel.login}) ${msg.user.name} | "${msg.text}"`
+    );
+    // Times-out Bots that are not subbed, mod, or broadcaster when trigger is detected
+    if (
+      (await client.twitch.api.isFollowedAPI({
+        userID: msg.user.id,
+        channelID: msg.channel.id,
+        access_token: client.twitch.auth.api.access_token,
+      })) == false
+    ) {
+      const reactionTime = `${Date.now() - timeStart}`;
+      Logger.info(
+        `Not Followed Bot Triggered:(${msg.channel.login}) ${msg.user.name} | "${msg.text} - ${reactionTime}ms"`
+      );
+      await client.deleteMsg(msg.channel.login, msg.messageID);
+      await msg.send(
+        `‼️ Follow Bot - ${msg.user.name} message removed. - ${reactionTime}ms`
+      );
+
+      // await client.timeout(
+      //   msg.channelName,
+      //   msg.senderUsername,
+      //   60,
+      //   "Possible Follow Bot."
+      // );
+    }
+    return;
+  }

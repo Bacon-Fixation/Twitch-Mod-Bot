@@ -1,10 +1,10 @@
-import { setNoticeMessage } from "../../index";
-import { TwitchBot } from "../../extendedClient";
-import { BotConfig, DBToken, StreamData, TwitchUser } from "./twitchAPI-types";
-import { QuickDB } from "quick.db";
+import { QuickDB } from 'quick.db';
 
-import Logger from "./logger";
-import { getNoticeMessage, noticeMessages } from "../..";
+import { getNoticeMessage, noticeMessages } from '../..';
+import { TwitchBot } from '../../extendedClient';
+import { setNoticeMessage } from '../../index';
+import Logger from './logger';
+import { BotConfig, DBToken, StreamData, TwitchUser } from './twitchAPI-types';
 
 const db = new QuickDB();
 const banned_users = db.table("banned_users");
@@ -110,7 +110,7 @@ export const unBanUser = async (
     });
     if (!user) {
       Logger.error("Unable to find: " + username);
-      // await client.say(channel, "Unable to find: " + user);
+      await client.say(channel, "Unable to find: " + username);
       return reject("Unable to find: " + username);
     }
 

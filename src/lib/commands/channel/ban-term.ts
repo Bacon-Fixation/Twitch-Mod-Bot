@@ -1,6 +1,6 @@
-import { modifyWordBank } from "../../utils/database";
-import { TwitchBot } from "../../../extendedClient";
-import { MessageData } from "../../utils/twitchAPI-types";
+import { TwitchBot } from '../../../extendedClient';
+import { modifyWordBank } from '../../utils/database';
+import { MessageData } from '../../utils/twitchAPI-types';
 
 module.exports = {
   name: "ban-term",

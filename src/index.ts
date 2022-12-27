@@ -1,41 +1,42 @@
-import {
-  removeDash,
-  removeUnderscore,
-  fitText,
-  removeAccents,
-  hasNumber,
-  keepSpace,
-} from "./lib/utils/utils";
-const { unleetify } = require("./unleet.js");
-import path from "path";
 import * as dotenv from "dotenv";
 import * as dotenvExpand from "dotenv-expand";
-dotenvExpand.expand(
-  dotenv.config({
-    path: path.resolve(__dirname, "../.env"),
-  })
-);
+import path from "path";
+
+import { SayError } from "@kararty/dank-twitch-irc";
+
+import { TwitchBot } from "./extendedClient";
+import { commandHandler } from "./lib/misc/handler";
+import {
+  banUser,
+  clearSavedStreamData,
+  savePermittedUser,
+  saveStreamData,
+} from "./lib/utils/database";
+import Logger from "./lib/utils/logger";
+import { invisibleChars } from "./lib/utils/regex";
 import {
   DBTwitchUser,
   MessageData,
   StreamData,
   TwitchViewers,
 } from "./lib/utils/twitchAPI-types";
-import { TwitchBot } from "./extendedClient";
-
-import("./server");
 import {
-  banUser,
-  saveStreamData,
-  clearSavedStreamData,
-  savePermittedUser,
-} from "./lib/utils/database";
-import Logger from "./lib/utils/logger";
+  fitText,
+  hasNumber,
+  keepSpace,
+  removeAccents,
+  removeDash,
+  removeUnderscore,
+} from "./lib/utils/utils";
 import { bot_settings } from "./server";
-import { invisibleChars } from "./lib/utils/regex";
-import { SayError } from "@kararty/dank-twitch-irc";
-import { commandHandler } from "./lib/misc/handler";
 
+const { unleetify } = require("./unleet.js");
+dotenvExpand.expand(
+  dotenv.config({
+    path: path.resolve(__dirname, "../.env"),
+  })
+);
+import("./server");
 var chatCheckTimer: NodeJS.Timer;
 export var unModded: string[] = [];
 export var botReady = false;
@@ -302,6 +303,12 @@ export const startBot = async (client: TwitchBot) => {
       if (!client.twitch.okUsers.includes(msgData.user.login))
         client.twitch.okUsers.push(msgData.user.login);
     }
+    // console.log(
+    //   await client.twitch.api.getBannedUsers({
+    //     access_token: client.twitch.auth.api.access_token,
+    //     broadcaster_id: msgData.channel.id,
+    //   })
+    // );
     commandHandler(client, msgData);
     // Follow Bot Ad Removal
 
@@ -321,7 +328,7 @@ export const startBot = async (client: TwitchBot) => {
         filteredText.includes("viewer")
       ) {
         try {
-          await isFollowBot(msgData);
+          await isFollowBot(client, msgData);
         } catch (err) {
           Logger.error(err);
         }
@@ -332,7 +339,7 @@ export const startBot = async (client: TwitchBot) => {
         filteredText.includes("viewer")
       )
         try {
-          await isFollowBot(msgData);
+          await isFollowBot(client, msgData);
         } catch (err) {
           Logger.error(err);
         }
@@ -514,11 +521,14 @@ export const startBot = async (client: TwitchBot) => {
   client.on("rawCommand", (cmd) => {
     Logger.info(cmd);
   });
-
+  client.on("WHISPER", (msg) => {
+    console.log(msg.badges.length);
+    client.whisper(msg.senderUsername, "hello world");
+  });
   // Connect
   await client.connect();
   await client.joinAll(tmiConnect);
-  async function isFollowBot(msg: MessageData) {
+  async function isFollowBot(client: TwitchBot, msg: MessageData) {
     if (
       msg.user.perms.broadcaster ||
       msg.user.perms.mod ||

@@ -1,11 +1,14 @@
-import { removeFromArray } from "./lib/utils/utils";
+import axios, { AxiosError, AxiosResponse } from "axios";
+import bodyParser from "body-parser";
+import * as crypto from "crypto";
+import * as dotenv from "dotenv";
+import * as dotenvExpand from "dotenv-expand";
+import express, { Response } from "express";
+import fs from "fs";
+import path from "path";
+
 import { TwitchBot } from "./extendedClient";
 import { botRunning, startBot, unModded, viewerList } from "./index";
-import {
-  BotConfig,
-  TwitchToken,
-  TwitchUser,
-} from "./lib/utils/twitchAPI-types";
 import {
   banUser,
   deleteBannedUser,
@@ -19,10 +22,14 @@ import {
   saveUserData,
   unBanUser,
 } from "./lib/utils/database";
-import fs from "fs";
-import path from "path";
-import * as dotenv from "dotenv";
-import * as dotenvExpand from "dotenv-expand";
+import Logger from "./lib/utils/logger";
+import {
+  BotConfig,
+  TwitchToken,
+  TwitchUser,
+} from "./lib/utils/twitchAPI-types";
+import { humanizeMS, removeFromArray } from "./lib/utils/utils";
+
 dotenvExpand.expand(
   dotenv.config({
     path: path.resolve(__dirname, "../.env.website"),
@@ -39,17 +46,6 @@ getConfig().then((db) => {
   });
 });
 loadAccessToken();
-
-import bodyParser from "body-parser";
-
-import express, { Response } from "express";
-
-import * as crypto from "crypto";
-// got is used for HTTP/API requests
-
-import axios, { AxiosError, AxiosResponse } from "axios";
-import Logger from "./lib/utils/logger";
-import { humanizeMS } from "./lib/utils/utils";
 
 // Express basics
 const app = express();
@@ -128,6 +124,7 @@ app.use(function (req: any, res, next) {
 
 app.get("/", (req, res) => {
   res.render("index", {
+    botRunning,
     user,
     bot_settings,
     redirect_uri: process.env.REDIRECT_URI,
@@ -149,6 +146,7 @@ app.get("/data", async (req: any, res) => {
   }
 
   res.render("data", {
+    botRunning,
     user,
     bannedUsers: client?.twitch?.banned_users ?? [],
     viewerList,
@@ -178,6 +176,7 @@ app.get("/banned", async (req: any, res) => {
   }
 
   res.render("bannedList", {
+    botRunning,
     user,
     bannedUsers: client?.twitch?.banned_users ?? [],
     unModded: unModded,
@@ -202,6 +201,7 @@ app.get("/permitted", async (req: any, res) => {
   }
 
   res.render("permittedList", {
+    botRunning,
     user,
     unModded: unModded,
     success: isValidToken,
@@ -313,6 +313,7 @@ app.get("/stream", (req: any, res, next) => {
   }
 
   res.render("stream", {
+    botRunning,
     user,
     streamData: liveData,
     stream,
@@ -367,7 +368,12 @@ app.get("/viewer", async (req: any, res) => {
     return;
   }
   if (!req.query.username)
-    return res.render("error", { message: "Invalid Request", status: 500 });
+    return res.render("error", {
+      botRunning,
+      user,
+      message: "Invalid Request",
+      status: 500,
+    });
   try {
     const userAPI = await client!.twitch.api.getUsers({
       logins: [req.query.username],
@@ -376,26 +382,39 @@ app.get("/viewer", async (req: any, res) => {
     const ageHumanized = humanizeMS(
       Date.now() - new Date(userAPI[0].created_at).valueOf()
     );
-    res.render("userInfo", { userAPI: userAPI[0], ageHumanized, user });
+    res.render("userInfo", {
+      botRunning,
+      userAPI: userAPI[0],
+      ageHumanized,
+      user,
+    });
   } catch (err) {
     Logger.error(err);
   }
 });
 app.post("/token", async (req: any, res) => {
   const token = req.query.access_token;
-  const response = await axios.get("https://id.twitch.tv/oauth2/validate", {
-    headers: {
-      Authorization: "Bearer " + token,
-    },
-    responseType: "json",
-  });
+  // console.log(token);
+  const response = await axios
+    .get("https://id.twitch.tv/oauth2/validate", {
+      headers: {
+        Authorization: "Bearer " + token,
+      },
+      responseType: "json",
+    })
+    .catch((err) => {
+      Logger.error(err);
+      return;
+    });
+  if (!response) return;
   if (response.data.login != bot_settings.bot_login) {
     const err = {
       message: `Open ${process.env.REDIRECT_URI} in a Private Tab and log in with the Bot Account`,
       status: "Whoops: Incorrect Login.",
     };
-
-    res.render("error", err);
+    req.session.error = err.message;
+    res.redirect("token");
+    // res.render("error", err);
     return;
   }
   isValidToken = true;
@@ -431,11 +450,12 @@ app.post("/token", async (req: any, res) => {
 });
 
 app.route("/config").get((req, res) => {
-  res.render("config", { user, bot_settings });
+  res.render("config", { botRunning, user, bot_settings });
 });
 
 app.route("/chat").get((req, res) => {
   res.render("chat", {
+    botRunning,
     user,
     unModded,
     channel: bot_settings.channel_to_moderate,
@@ -469,7 +489,12 @@ app.route("/token").get((req: any, res: Response) => {
             expires_in: 0,
             scopes: [],
           };
-          res.render("error", err);
+          res.render("error", {
+            botRunning,
+            user,
+            message: err.message,
+            status: err.status,
+          });
           return;
         }
         isValidToken = true;
@@ -478,16 +503,18 @@ app.route("/token").get((req: any, res: Response) => {
       })
       .catch((err) => {
         isValidToken = false;
-        // res.render("error", err);
+        res.render("error", err);
         return;
       });
   }
   req.session.state = crypto.randomBytes(16).toString("base64");
   res.render("token", {
+    botRunning,
     user,
     client_id: bot_settings.client_id,
     redirect_uri: process.env.REDIRECT_URI,
     state: state,
+    tokens,
     tokenInfo,
     scopes: JSON.parse(
       `${fs.readFileSync(path.join(__dirname, "../www/scopes.json"))} `
@@ -497,7 +524,7 @@ app.route("/token").get((req: any, res: Response) => {
 app.route("/filtering").get((req: any, res) => {
   if (client) {
     const badWords = client.twitch.wordBank.blocked;
-    res.render("filtering", { user, badWords, viewerList });
+    res.render("filtering", { botRunning, user, badWords, viewerList });
   } else res.redirect("/token");
 });
 
@@ -546,6 +573,7 @@ app.use(function (req, res, next) {
 app.use(function (err: any, req: any, res: any, next: any) {
   res.status(err.status || 500);
   res.render("error", {
+    botRunning,
     user,
     message: err.message.replace(__dirname, ""),
     status: err.status,

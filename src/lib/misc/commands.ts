@@ -1,8 +1,9 @@
-import { TwitchBot } from "./../../extendedClient";
-import path = require("path");
 // import { client } from "../../server";
+import fs from 'fs';
 
-import fs from "fs";
+import { TwitchBot } from '../../extendedClient';
+
+import path = require("path");
 // const { logger } = require("../utils/logger.js");
 
 export function addCommand(client: TwitchBot, command: any) {

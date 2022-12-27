@@ -1,26 +1,18 @@
 import {
-  getAllBanned,
-  getAllPermitted,
-  getSavedStreamData,
-  getUserData,
-  getWordBank,
-} from "./lib/utils/database";
-import { TwitchAPI } from "./lib/utils/twitchAPI";
+    AlternateMessageModifier, ChatClient, SlowModeRateLimiter, UserStateTracker
+} from '@kararty/dank-twitch-irc';
+
+import { loadCommands } from './lib/misc/commands';
 import {
-  ClientTwitchExtension,
-  StreamData,
-  TwitchToken,
-  TwitchUser,
-} from "./lib/utils/twitchAPI-types";
+    getAllBanned, getAllPermitted, getSavedStreamData, getUserData, getWordBank
+} from './lib/utils/database';
+import Logger from './lib/utils/logger';
+import { TwitchAPI } from './lib/utils/twitchAPI';
 import {
-  ChatClient,
-  AlternateMessageModifier,
-  UserStateTracker,
-  SlowModeRateLimiter,
-} from "@kararty/dank-twitch-irc";
-import { bot_settings } from "./server";
-import Logger from "./lib/utils/logger";
-import { loadCommands } from "./lib/misc/commands";
+    ClientTwitchExtension, StreamData, TwitchToken, TwitchUser
+} from './lib/utils/twitchAPI-types';
+import { bot_settings } from './server';
+
 import("./lib/misc/commands");
 
 export class TwitchBot extends ChatClient {
@@ -33,18 +25,8 @@ export class TwitchBot extends ChatClient {
     api: new TwitchAPI(bot_settings.client_id, bot_settings.client_secret),
     auth: {
       api: {
-        // access_token: "",
-        // refresh_token: "",
-        // expires_in: 0,
-        // token_type: "",
-        // scope: [""],
       } as TwitchToken,
       tmi: {
-        // access_token: "",
-        // refresh_token: "",
-        // expires_in: 0,
-        // token_type: "",
-        // scope: [""],
       } as TwitchToken,
     },
     permitted_users: [],
@@ -53,29 +35,11 @@ export class TwitchBot extends ChatClient {
     vip_users: [],
     okUsers: [],
     bot: {
-      // id: "",
-      // login: "",
-      // display_name: "",
-      // type: "",
-      // broadcaster_type: "",
-      // description: "",
-      // profile_image_url: "",
-      // offline_image_url: "",
-      // view_count: 0,
-      // email: "",
-      // created_at: "",
     } as TwitchUser,
     wordBank: {
       blocked: [],
     },
     stream_data: {
-      // subs: [],
-      // reSubs: [],
-      // raiders: [],
-      // binxRaids: [],
-      // gifters: {},
-      // welcomeList: [],
-      // cheerers: [],
     } as StreamData,
     stream: undefined,
   };

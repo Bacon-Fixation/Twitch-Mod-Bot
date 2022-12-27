@@ -1,5 +1,6 @@
-import winston from "winston";
-import "winston-daily-rotate-file";
+import 'winston-daily-rotate-file';
+
+import winston from 'winston';
 
 const levels = {
   error: 0,

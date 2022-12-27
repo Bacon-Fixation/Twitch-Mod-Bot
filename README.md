@@ -3,7 +3,8 @@
 
 # Twitch-Mod-Bot (Working Title)
 
-<b>Work In Progress</b>
+#### <b>Work In Progress</b></br>
+
 A personal Auto Mod Bot for Twitch to help combat inappropriate username harassment, and Follow Bot advertisements from the chat.
 it is designed to moderate only one channel locally as part of your stream kit
 
@@ -20,9 +21,10 @@ it is designed to moderate only one channel locally as part of your stream kit
 
 - Either by running the `Mod-Bot Start.bat` file </br><b>OR</b></br> by opening Command Prompt and running `npm run dev` in the `./Twitch-Mod-Bot/` folder
 - Open the <b>Dashboard</b> by going to "http://localhost:8000/" in a private browser tab. (Incognito Mode)
-- If needed follow the steps in the Dashboard to create/setup Mod-Bot  
+- If needed follow the steps in the Dashboard to create/setup Mod-Bot
 
 ## Features
+
 Currently list of available features
 
 - Dashboard Controls
@@ -37,21 +39,22 @@ Currently list of available features
 
 ## Commands
 
-|   Command   	|                    Description                    	|         Example        	|
-|:-----------:	|:-------------------------------------------------:	|:----------------------:	|
-| ^ban        	| Ban a user from the channel                       	| ^ban @bacon_fixation   	|
-| ^unban      	| Unban a user from channel                         	| ^unban @bacon_fixation 	|
-| ^ban-term   	| Add a Keyword to Auto Ban Users                   	| ^ban-term bacon        	|
-| ^unban-term 	| Remove a Keyword from Word Bank                   	| ^unban-term bacon      	|
-| ^help       	| Shows the current Command List or Command Details 	| ^help or ^help ban     	|
+|   Command   |                    Description                    |        Example         |
+| :---------: | :-----------------------------------------------: | :--------------------: |
+|    ^ban     |            Ban a user from the channel            |  ^ban @bacon_fixation  |
+|   ^unban    |             Unban a user from channel             | ^unban @bacon_fixation |
+|  ^ban-term  |          Add a Keyword to Auto Ban Users          |    ^ban-term bacon     |
+| ^unban-term |          Remove a Keyword from Word Bank          |   ^unban-term bacon    |
+|    ^help    | Shows the current Command List or Command Details |   ^help or ^help ban   |
 
 ## To Do
 
-being a work in progress, here is whats planned 
+being a work in progress, here is whats planned
+
 - Make the Account Age and Follow Age Limits adjustable
-- Make Keywords for the Follow Bot triggers custumizable
+- Make Keywords for the Follow Bot triggers customizable
 - Switch to using Prisma instead of quick.db (Database Optimizations)
-- Add Command Cooldowns (prevent command spamming)
+- Add Command Cooldown (prevent command spamming)
 - Stream to Stream Metrics (help track growth)
-- Auto Welcome and/or Shout-out specific users with persnalized messages
+- Auto Welcome and/or Shout-out specific users with personalized messages
 - Notify the Chat when a Streamer you would like to support goes live while you are streaming (advertise a fellow streamer)
